@@ -242,7 +242,7 @@ function simulate(p) {
   let x = 0, v = 0, w = 0, s = sCharge, th = 0, phi = 0, wax = 0, coupled = s > 0, a = 0, t = 0;
   const dt = 1e-5, mus = p.mu, muk = 0.8 * p.mu, meff = m + If / (Rf * Rf);
   const rec = { t: [], x: [], v: [], th: [], phi: [], s: [], slip: [], ft: [], fb: [], ke: [], eb: [], nr: [] };
-  let next = 0, peakV = 0, slipMax = 0, Ebear = 0, Eslip = 0, Epow = 0, Efront = 0, Erol = 0, tUncouple = -1, ftPeak = 0;
+  let next = 0, peakV = 0, slipMax = 0, Ebear = 0, Eslip = 0, Epow = 0, Efront = 0, Erol = 0, tUncouple = -1, ftPeak = 0, muReq = 0;
   const sg = (u, e) => Math.tanh(u / e);
   for (let i = 0; i < 3000000; i++) {
     const lam = (Lrest + s) / L0;
@@ -263,6 +263,7 @@ function simulate(p) {
     x += v * dt; th += w * dt; phi += wax * dt; t += dt;
     Ebear += (tauB + tauClutch) * w * dt; Eslip += Math.abs(Ft * vs) * dt; Efront += Ffb * v * dt; Erol += (Frr + Fd) * v * dt;
     slipMax = Math.max(slipMax, Math.abs(vs)); peakV = Math.max(peakV, v); ftPeak = Math.max(ftPeak, Fb * rs / R);
+    if (coupled && Nr > 1e-6) muReq = Math.max(muReq, (Fb * rs - tauB) / R / Nr);
     if (t >= next) {
       rec.t.push(t); rec.x.push(x); rec.v.push(v); rec.th.push(th); rec.phi.push(phi); rec.s.push(s); rec.slip.push(vs); rec.ft.push(Ft); rec.fb.push(Fb); rec.nr.push(Nr);
       rec.ke.push(0.5 * meff * v * v + 0.5 * Iw * w * w); rec.eb.push(s > 0 ? E(lam) - E(G.lam0) : 0);
@@ -271,7 +272,7 @@ function simulate(p) {
     if (!coupled && v < 2e-4 && t > 0.05) break;
   }
   return { dist: x, time: t, peakV, Estored, sCharge, smax, dCap, slipMax, Ebear, Eslip, Epow, Efront, Erol, tUncouple, rec, lam: (Lrest + sCharge) / L0,
-    creep, rolled, phiCharged, mp, ftPeak, fr: (L - lcg) / L, muNeeded: ftPeak / ((L - lcg) / L * m * g) };
+    creep, rolled, phiCharged, mp, ftPeak, fr: (L - lcg) / L, muNeeded: muReq };
 }
 function simAt(tau) { // sample the run record at tau seconds after release
   const r = SIM.rec; const n = r.t.length;
@@ -1840,7 +1841,7 @@ function schedulePhys() { clearTimeout(physTimer); physTimer = setTimeout(() => 
 function updateNote() {
   const n = $('#physNote'); if (!n) return;
   const mp = SIM.mp;
-  n.textContent = `Toy ${mp.m.toFixed(1)} g, ${(mp.printed * 100).toFixed(0)} % printed PLA by mass, centre of mass ${(mp.x - G.axR[0]).toFixed(2)} cm ahead of the rear axle (${(SIM.fr * 100).toFixed(0)} % on the drive wheels). Stored ${(SIM.Estored * 1000).toFixed(1)} mJ at λ ${SIM.lam.toFixed(2)}; peak drive force needs μ ≥ ${SIM.muNeeded.toFixed(2)}. Losses: rolling + air ${(SIM.Erol * 1000).toFixed(1)} mJ, front bores ${(SIM.Efront * 1000).toFixed(1)} mJ, rear bearings + freewheel ${(SIM.Ebear * 1000).toFixed(1)} mJ, tyre slip ${(SIM.Eslip * 1000).toFixed(1)} mJ. The band is fully wound after ${(SIM.dCap * 100).toFixed(1)} cm of pull${P.pull > SIM.dCap * 100 ? ' (the wheels skid for the rest)' : ''}; the ratchet then lets it creep ${(SIM.creep * 1000).toFixed(1)} mm forward onto the next tooth. Winding the band takes ${(SIM.ftPeak / (1 - P.hyst)).toFixed(2)} N of floor grip at the wheels, so the finger presses down about 1.5 N while it pulls.`;
+  n.textContent = `Toy ${mp.m.toFixed(1)} g, ${(mp.printed * 100).toFixed(0)} % printed PLA by mass, centre of mass ${(mp.x - G.axR[0]).toFixed(2)} cm ahead of the rear axle (${(SIM.fr * 100).toFixed(0)} % on the drive wheels). Stored ${(SIM.Estored * 1000).toFixed(1)} mJ at λ ${SIM.lam.toFixed(2)}; launch needs tyre grip μ ≥ ${SIM.muNeeded.toFixed(2)} (including load transfer). Losses: rolling + air ${(SIM.Erol * 1000).toFixed(1)} mJ, front bores ${(SIM.Efront * 1000).toFixed(1)} mJ, rear bearings + freewheel ${(SIM.Ebear * 1000).toFixed(1)} mJ, tyre slip ${(SIM.Eslip * 1000).toFixed(1)} mJ. The band is fully wound after ${(SIM.dCap * 100).toFixed(1)} cm of pull${P.pull > SIM.dCap * 100 ? ' (the wheels skid for the rest)' : ''}; the ratchet then lets it creep ${(SIM.creep * 1000).toFixed(1)} mm forward onto the next tooth. Winding the band takes ${(SIM.ftPeak / (1 - P.hyst)).toFixed(2)} N of floor grip at the wheels, so the finger presses down about 1.5 N while it pulls.`;
 }
 
 /* ---------------- input ---------------- */

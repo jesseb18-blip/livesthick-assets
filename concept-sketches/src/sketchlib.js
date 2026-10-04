@@ -30,6 +30,7 @@ function TXT(x, y, str, o = {}) {
   if (o.weight) t.setAttribute('font-weight', o.weight);
   if (o.rot) t.setAttribute('transform', `rotate(${o.rot} ${x} ${y})`);
   if (o.ls) t.setAttribute('letter-spacing', o.ls);
+  if (o.halo) { t.setAttribute('stroke', '#fdfcf8'); t.setAttribute('stroke-width', o.halo === true ? 4 : o.halo); t.setAttribute('paint-order', 'stroke'); t.setAttribute('stroke-linejoin', 'round'); }
   const lines = String(str).split('\n');
   const lh = o.lh || (o.size || 14.5) * 1.22;
   lines.forEach((ln, i) => {
@@ -100,10 +101,10 @@ function ellPts(cx, cy, rx, ry, rotDeg = 0, a0 = 0, a1 = Math.PI * 2, n = 48) {
 }
 // gear / ratchet outline. saw=true: steep face trails the tip (locks anticlockwise on screen);
 // saw='rev': steep face leads the tip (locks clockwise on screen)
-function gearPts(cx, cy, r0, r1, n, saw) {
+function gearPts(cx, cy, r0, r1, n, saw, ph = 0) {
   const pts = [];
   for (let i = 0; i < n; i++) {
-    const a = i / n * Math.PI * 2, b = (i + 0.5) / n * Math.PI * 2, c = (i + 1) / n * Math.PI * 2;
+    const a = ph + i / n * Math.PI * 2, b = ph + (i + 0.5) / n * Math.PI * 2, c = ph + (i + 1) / n * Math.PI * 2;
     if (saw === 'rev') { pts.push([cx + r1 * Math.cos(a), cy + r1 * Math.sin(a)]); pts.push([cx + r0 * Math.cos(a + 0.02), cy + r0 * Math.sin(a + 0.02)]); }
     else if (saw) { pts.push([cx + r1 * Math.cos(a), cy + r1 * Math.sin(a)]); pts.push([cx + r0 * Math.cos(c - 0.02), cy + r0 * Math.sin(c - 0.02)]); }
     else { pts.push([cx + r0 * Math.cos(a), cy + r0 * Math.sin(a)]); pts.push([cx + r1 * Math.cos(a + 0.12), cy + r1 * Math.sin(a + 0.12)]); pts.push([cx + r1 * Math.cos(b - 0.12), cy + r1 * Math.sin(b - 0.12)]); pts.push([cx + r0 * Math.cos(b), cy + r0 * Math.sin(b)]); }

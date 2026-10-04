@@ -33,41 +33,49 @@ The cutaway slices the shells and the near wheels. It shows the band, the line, 
 ## Mechanism
 
 - **Wheels:** 20 mm rear wheels with nitrile O-ring tyres sit in wells in the white belly keel, so only about 3 mm of tyre shows under the belly.
-- **Axle:** the wheels ride on a 2 mm steel axle supported by two MR52 ball bearings pressed into the keel walls.
-- **Freewheel:** each rear hub has three flexure pawls on a 12-tooth ratchet ring fixed to the axle. The axle can drive the wheels, and the wheels can overrun the axle once the line has paid out.
+- **Axle:** a 2 mm steel axle runs in two MR52 ball bearings pressed into the keel walls.
+- **Freewheel:** each rear wheel turns on its own MR52 bearing. A curved PLA flexure pawl in the hub rides an 8-tooth ratchet ring fixed to the axle, so the axle drives the wheels one way and the wheels coast freely once the line has paid out.
+- **Band stop:** at full payout the band's tail loop parks against two posts in the keel, so the line goes slack and the axle stops.
 - **Charge:** a rubber band anchored under the chin pulls a line wound on the axle. Pulling the toy back about 22 cm winds the line and stretches the band. A 12-tooth ratchet and pawl hold the charge.
 - **Trigger:** tapping the head forward rotates it 15° about the neck ball. A lever inside the head pulls the trigger rod, which swings the pawl clear of the teeth.
 
 ## Physics model (run phase, SI units, 10 µs explicit integration)
 
 - **Band:** natural-rubber loop, neo-Hookean force `F = G·A·(λ − λ⁻²)` and stored energy `E = G·A·L₀·(λ²/2 + 1/λ − 3/2)`. It carries a 1.10 preload stretch and hysteresis loss on unloading. Geometry caps the stretch: the anchor sits 6.2 cm from the knot's closest approach to the spool.
-- **Charge:** line winds on the 2 mm axle (1.2 mm effective radius) through 20 mm wheels. Pull past the fully wound point and the wheels skid. When the finger lifts, the axle creeps forward to the next ratchet step, and the creep is subtracted from the stored charge.
+- **Charge:** line winds on the 2 mm axle (1.2 mm effective radius) through 20 mm wheels. Pull past the fully wound point and the wheels skid. The finger presses down about 1.5 N while pulling so the tyres can grip. When the finger lifts, the axle creeps forward to the next ratchet step, and the creep is subtracted from the stored charge.
 - **Mass and centre of mass:** summed from a per-part mass table (`MASS` in `index.html`) plus the steel ballast slider. The rear normal load includes load transfer from acceleration.
-- **Drive:** traction follows a Stribeck-type O-ring friction curve with slip between the tyre and the floor. The rear ball bearings carry the resultant of the wheel load and the line tension.
-- **Coast:** once the line is unwound, the freewheel hubs overrun the stopped axle. Losses during the coast are rolling resistance, plain PLA bores on the front axle, bearing friction, freewheel pawl drag and air drag.
+- **Drive:** traction follows a Stribeck-type O-ring friction curve with slip between the tyre and the floor. The keel bearings carry the resultant of the wheel load and the line tension.
+- **Coast:** once the line is unwound, the wheels coast on their hub bearings around the parked axle. Each pawl click loses its flexure energy ½kδ², with k = E·w·t³/(4L³) = 84 N/m for the drawn 1.5 × 0.4 × 10 mm PLA beam and δ = 0.2 mm teeth. That works out to 4.3 µN·m of drag. The other coast losses are rolling resistance, plain PLA bores on the front axle, bearing friction and air drag.
 
 ### Defaults
 
 | Quantity | Value |
 | --- | --- |
-| Toy mass | 37.8 g |
-| Printed PLA share by mass | 80 % (rule: at least 75 %) |
-| Centre of mass | 1.77 cm ahead of the rear axle, 67 % of weight on the drive wheels |
+| Toy mass | 38.2 g |
+| Printed PLA share by mass | 79 % (rule: at least 75 %) |
+| Centre of mass | 1.75 cm ahead of the rear axle, 68 % of weight on the drive wheels |
 | Stored energy | 30.8 mJ at λ 1.91 |
 | Band fully wound after | 22.3 cm of pull |
 | Ratchet creep after the finger lifts | 3.7 mm |
 | Peak speed | 1.11 m/s |
-| Run | 2.79 m in 4.98 s |
+| Run | 2.79 m in 5.0 s (12 % over the 2.5 m target) |
+| Wheelspin at launch | only below O-ring grip μ ≈ 0.64 |
 
 ### Sensitivity
 
 | Change | Run |
 | --- | --- |
-| Plain PLA rear bores instead of ball bearings | 1.63 m |
+| Plain PLA rear bores instead of ball bearings (rear friction 0.08) | 2.21 m |
 | Front bore μ 0.30 | 2.40 m |
-| Rolling resistance Crr 0.025 | 2.00 m |
-| O-ring grip μ 0.65 | 2.78 m |
-| O-ring grip μ 0.60 | wheelspin at launch, 0.67 m |
+| Rolling resistance Crr 0.025 | 1.99 m |
+| Pull back only 15 cm | 1.55 m |
+| O-ring grip μ 0.62 | wheelspin at launch, 0.91 m |
+
+## Assembly sequence
+
+The assembly is shown as a tripod time-lapse. Between frames each part goes from the kit layout straight to its seat, and the hand presses it home.
+
+The order matters. The wheels drop into their wells before the axle slides through the keel bearings, the wheels and the spool. The band hooks over the chin post before the shells snap on.
 
 ## Egg size
 

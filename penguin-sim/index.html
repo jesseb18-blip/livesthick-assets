@@ -176,7 +176,7 @@ const P = {
   // physics
   ballast: 5.3, pull: 22, bandG: 0.45, bandA: 2.56, bandL0: 3.2, spoolR: 1.2, mu: 0.9, crr: 0.015, rearMu: 0.004, frontMu: 0.2, hyst: 0.15,
   // render
-  scale: 0.7, maxSpp: 512, bounces: 4, ev: 0.2, win: 3.0, pan: 4.5, sun: 10, shutter: 1 / 120, layer: 0.7, cut: 0, fov: 38, fstop: 8, autoStop: 1, grain: 1, showHand: 1, handheld: 1,
+  scale: 0.7, maxSpp: 512, bounces: 4, ev: -0.1, win: 3.0, pan: 4.5, sun: 6, shutter: 1 / 120, layer: 0.7, cut: 0, fov: 38, fstop: 8, autoStop: 1, grain: 1, showHand: 1, handheld: 1,
   // camera
   director: 1, follow: 1,
 };
@@ -187,7 +187,7 @@ const G = {
   R: 1.0, Rf: 0.6, axR: [2.4, 1.0, 0], axF: [7.8, 0.6, 0], rearW: 0.88, frontW: 0.55,
   neck: [9.9, 2.25, 0], anchorX: 9.1, lam0: 1.1, noseX: 13.41,
   flip: [6.4, 1.95, 1.82], tail: [-1.75, 2.0, 0], pawl: [3.16, 1.66, 0.45], pawlTip: [-0.58, -0.19], pawlArm: 0.354,
-  ratN: 12, ratR0: 0.38, ratH: 0.12, bearingR: 0.25,
+  ratN: 12, ratR0: 0.38, ratH: 0.12, bearingR: 0.1,
 };
 G.bandLmax = G.anchorX - G.axR[0] - 0.5;
 G.wheelbase = G.axF[0] - G.axR[0];
@@ -200,7 +200,7 @@ const MASS = [
   ['Tail', 0.4, -2.1, 2.0, 1], ['Feet clip', 1.0, -2.0, 0.6, 1], ['Rear hubs', 1.4, 2.4, 1.0, 1], ['Front hubs', 0.5, 7.8, 0.6, 1],
   ['Spool + ratchet rings', 0.55, 2.4, 1.0, 1], ['Pawl + trigger rod', 0.3, 5.5, 2.2, 1],
   ['Rear O-rings', 0.3, 2.4, 1.0, 0], ['Front O-rings', 0.1, 7.8, 0.6, 0], ['2 mm rear axle', 0.63, 2.4, 1.0, 0], ['1.5 mm front axle', 0.22, 7.8, 0.6, 0],
-  ['MR52 bearings', 0.4, 2.4, 1.0, 0], ['Band + line', 0.5, 5.6, 1.12, 0],
+  ['MR52 bearings (4)', 0.8, 2.4, 1.0, 0], ['Band + line', 0.5, 5.6, 1.12, 0],
 ];
 function massProps(p) {
   let m = 0, mx = 0, my = 0, pr = 0;
@@ -241,9 +241,13 @@ function simulate(p) {
   const Estored = E((Lrest + sCharge) / L0) - E(G.lam0);
   let x = 0, v = 0, w = 0, s = sCharge, th = 0, phi = 0, wax = 0, coupled = s > 0, a = 0, t = 0;
   const dt = 1e-5, mus = p.mu, muk = 0.8 * p.mu, meff = m + If / (Rf * Rf);
-  const rec = { t: [], x: [], v: [], th: [], phi: [], s: [], slip: [], ft: [], fb: [], ke: [], eb: [], nr: [] };
+  const rec = { t: [], x: [], v: [], a: [], th: [], phi: [], s: [], slip: [], ft: [], fb: [], ke: [], eb: [], nr: [] };
   let next = 0, peakV = 0, slipMax = 0, Ebear = 0, Eslip = 0, Epow = 0, Efront = 0, Erol = 0, tUncouple = -1, ftPeak = 0, muReq = 0;
   const sg = (u, e) => Math.tanh(u / e);
+  // freewheel drag: each hub's PLA flexure pawl (E 3.5 GPa, 1.5 x 0.4 mm section, 10 mm long) is flicked over
+  // 0.2 mm ratchet teeth, 8 per turn; the stored spring energy is lost at each click
+  const kFlex = 3.5e9 * 0.0015 * 0.0004 ** 3 / (4 * 0.010 ** 3), eClick = 0.5 * kFlex * 0.0002 ** 2;
+  const tauClick = 2 * 8 * eClick / (2 * Math.PI);
   for (let i = 0; i < 3000000; i++) {
     const lam = (Lrest + s) / L0;
     const Fb = coupled ? F(lam) * (1 - p.hyst) : 0;
@@ -251,8 +255,9 @@ function simulate(p) {
     const vs = w * R - v;
     const mu = (muk + (mus - muk) * Math.exp(-((vs / 0.01) ** 2))) * Math.tanh(vs / 0.0015);
     const Ft = mu * Nr;
-    const tauB = p.rearMu * Math.hypot(Nr, Fb) * rb * sg(w, 0.05);     // two ball bearings carry wheel load + line tension
-    const tauClutch = coupled ? 0 : 3e-6 * sg(w, 0.05);                 // freewheel hub pawls dragging over the axle ratchet rings
+    // driving: the keel MR52s carry wheel load + line tension; coasting: the wheels spin on their hub MR52s
+    const tauB = p.rearMu * Math.hypot(Nr, Fb) * rb * sg(w, 0.05);
+    const tauClutch = coupled ? 0 : tauClick * sg(w, 0.05);
     const I = Iw + (coupled ? Iax : 0);
     const dw = (Fb * rs - Ft * R - tauB - tauClutch) / I;
     const Frr = p.crr * m * g * sg(v, 1e-3), Ffb = p.frontMu * Nf * raxf / Rf * sg(v, 1e-3), Fd = 0.5 * 1.2 * 0.45 * 1.1e-3 * v * Math.abs(v);
@@ -263,24 +268,31 @@ function simulate(p) {
     x += v * dt; th += w * dt; phi += wax * dt; t += dt;
     Ebear += (tauB + tauClutch) * w * dt; Eslip += Math.abs(Ft * vs) * dt; Efront += Ffb * v * dt; Erol += (Frr + Fd) * v * dt;
     slipMax = Math.max(slipMax, Math.abs(vs)); peakV = Math.max(peakV, v); ftPeak = Math.max(ftPeak, Fb * rs / R);
-    if (coupled && Nr > 1e-6) muReq = Math.max(muReq, (Fb * rs - tauB) / R / Nr);
+    if (coupled && Nr > 1e-6 && Math.abs(vs) < 0.005) muReq = Math.max(muReq, Math.abs(Ft) / Nr); // grip actually used while the tyre sticks
     if (t >= next) {
-      rec.t.push(t); rec.x.push(x); rec.v.push(v); rec.th.push(th); rec.phi.push(phi); rec.s.push(s); rec.slip.push(vs); rec.ft.push(Ft); rec.fb.push(Fb); rec.nr.push(Nr);
+      rec.a.push(a); rec.t.push(t); rec.x.push(x); rec.v.push(v); rec.th.push(th); rec.phi.push(phi); rec.s.push(s); rec.slip.push(vs); rec.ft.push(Ft); rec.fb.push(Fb); rec.nr.push(Nr);
       rec.ke.push(0.5 * meff * v * v + 0.5 * Iw * w * w); rec.eb.push(s > 0 ? E(lam) - E(G.lam0) : 0);
       next += 0.001;
     }
+    if (p._launchOnly && (!coupled || Math.abs(vs) > 0.05)) break;
     if (!coupled && v < 2e-4 && t > 0.05) break;
   }
-  return { dist: x, time: t, peakV, Estored, sCharge, smax, dCap, slipMax, Ebear, Eslip, Epow, Efront, Erol, tUncouple, rec, lam: (Lrest + sCharge) / L0,
+  return { tauClick, kFlex, dist: x, time: t, peakV, Estored, sCharge, smax, dCap, slipMax, Ebear, Eslip, Epow, Efront, Erol, tUncouple, rec, lam: (Lrest + sCharge) / L0,
     creep, rolled, phiCharged, mp, ftPeak, fr: (L - lcg) / L, muNeeded: muReq };
+}
+// lowest tyre grip that still launches without wheelspin (bisection on the launch phase only)
+function gripThreshold(p) {
+  let lo = 0.2, hi = 1.5;
+  for (let i = 0; i < 7; i++) { const mid = (lo + hi) / 2; const r = simulate({ ...p, mu: mid, _launchOnly: true }); if (r.slipMax > 0.05) lo = mid; else hi = mid; }
+  return hi;
 }
 function simAt(tau) { // sample the run record at tau seconds after release
   const r = SIM.rec; const n = r.t.length;
-  if (tau <= 0) return { x: 0, v: 0, th: 0, phi: 0, s: SIM.sCharge, slip: 0, ke: 0, eb: r.eb[0] || 0 };
+  if (tau <= 0) return { x: 0, v: 0, a: 0, th: 0, phi: 0, s: SIM.sCharge, slip: 0, ke: 0, eb: r.eb[0] || 0 };
   const f = tau / 0.001; let i = Math.floor(f);
-  if (i >= n - 1) { i = n - 1; return { x: r.x[i], v: 0, th: r.th[i], phi: r.phi[i], s: r.s[i], slip: 0, ke: 0, eb: r.eb[i] }; }
+  if (i >= n - 1) { i = n - 1; return { x: r.x[i], v: 0, a: 0, th: r.th[i], phi: r.phi[i], s: r.s[i], slip: 0, ke: 0, eb: r.eb[i] }; }
   const u = f - i; const L = (k) => lerp(r[k][i], r[k][i + 1], u);
-  return { x: L('x'), v: L('v'), th: L('th'), phi: L('phi'), s: L('s'), slip: L('slip'), ke: L('ke'), eb: L('eb') };
+  return { x: L('x'), v: L('v'), a: L('a'), th: L('th'), phi: L('phi'), s: L('s'), slip: L('slip'), ke: L('ke'), eb: L('eb') };
 }
 
 /* ---------------- parts ---------------- */
@@ -300,7 +312,7 @@ const PARTS = [
   { n: 'Front wheel, left', c: [0, 0, 0.02], r: 0.65, kit: [10.6, 22, 0.182, -Math.PI / 2, 0, 0], app: [0, -0.2, 3] },
   { n: 'Front wheel, right', c: [0, 0, 0.02], r: 0.65, kit: [12.4, 22, 0.182, -Math.PI / 2, 0, 0], app: [0, -0.2, -3] },
   { n: 'Rear axle (2 mm steel) + ratchet rings', c: [0, 0, 0], r: 1.32, kit: [16.5, 22, 0.282, 0, Math.PI / 2, 0], app: [0, 0, 5] },
-  { n: 'Front axle (1.5 mm steel)', c: [0, 0, 0], r: 0.82, kit: [20.3, 22, 0.076, 0, Math.PI / 2, 0], app: [0, 0, 3.5] },
+  { n: 'Front axle (1.5 mm steel)', c: [0, 0, 0], r: 0.76, kit: [20.3, 22, 0.076, 0, Math.PI / 2, 0], app: [0, 0, 3.5] },
   { n: 'Spool + ratchet', c: [0, 0, 0.12], r: 0.65, kit: [23, 22, 0.472, -Math.PI / 2, 0, 0], app: [0, 5, 0], internal: true },
   { n: 'Rubber band + line', c: [5.8, 1.12, 0], r: 3.6, kit: [33, 16.8, 0.086, 0, 0, 0], app: [0, 5, 0], internal: true },
   { n: 'Release pawl', c: [-0.2, 0.05, 0], r: 0.7, kit: [25.6, 22, 0.142, -Math.PI / 2, 0, 0], app: [0, 5, 0], internal: true },
@@ -312,7 +324,15 @@ const PARTS = [
   { n: 'Forearm + sleeve', c: [-21.7, 25.7, -0.9], r: 23.5 },
 ];
 const NP = PARTS.length;
-const ASM_ORDER = [0, 1, 15, 13, 9, 10, 14, 11, 12, 16, 17, 18, 2, 3, 4, 5, 6, 7, 8];
+const ASM_ORDER = [0, 1, 15, 9, 10, 13, 11, 12, 14, 16, 17, 18, 2, 3, 4, 5, 6, 7, 8];
+// where the fingertip presses each part home (toy frame) and the push direction (towards the finger)
+const PRESS = {
+  0: [1.0, 1.66, 0, 0, 1, 0], 1: [8.0, 1.66, 0, 0, 1, 0], 15: [2.4, 1.52, 0, 0, 1, 0], 9: [2.4, 2.02, 0.88, 0, 1, 0], 10: [2.4, 2.02, -0.88, 0, 1, 0],
+  13: [2.4, 1.0, 1.45, 0, 0.25, 1], 11: [7.8, 1.22, 0.55, 0, 1, 0], 12: [7.8, 1.22, -0.55, 0, 1, 0], 14: [7.8, 0.72, 0.62, 0, 0.8, 0.6],
+  16: [9.1, 1.45, 0, 0, 1, 0], 17: [3.2, 1.75, 0.45, 0, 1, 0], 18: [6.6, 2.45, 0.45, 0, 1, 0], 2: [1.5, 3.2, 0, 0, 1, 0], 3: [6.5, 3.12, 0, 0, 1, 0],
+  4: [10.7, 4.3, 0, 0, 1, 0], 5: [6.6, 2.05, 1.97, 0, 0.45, 1], 6: [6.6, 2.05, -1.97, 0, 0.45, -1], 7: [-2.9, 2.2, 0, -1, 0.6, 0], 8: [-2.4, 1.0, 0.3, -0.5, 1, 0.2],
+};
+const HAND_HOLD = 0.4;
 const IDX = { HEAD: 4, SPOOL: 15, BAND: 16, PAWL: 17, ROD: 18, EGGB: 19, EGGT: 20, HAND: 21, CASE: 22, ARM: 23 };
 
 /* ---------------- timeline ---------------- */
@@ -322,8 +342,8 @@ function buildTimeline() {
   t.asm0 = 1.8; t.dur = 1.25;
   // hand-paced assembly: irregular gaps between parts (deterministic)
   t.slot = {}; let acc = t.asm0;
-  ASM_ORDER.forEach((pi, k) => { t.slot[pi] = acc; acc += 0.5 + 0.22 * fract(Math.sin((k + 1) * 12.9898) * 43758.5453); });
-  t.asmEnd = t.slot[ASM_ORDER[ASM_ORDER.length - 1]] + t.dur;
+  ASM_ORDER.forEach((pi, k) => { t.slot[pi] = acc; acc += 0.55 + 0.25 * fract(Math.sin((k + 1) * 12.9898) * 43758.5453); });
+  t.asmEnd = t.slot[ASM_ORDER[ASM_ORDER.length - 1]] + 0.8;
   t.finIn0 = t.asmEnd + 0.5; t.finIn1 = t.finIn0 + 0.85;
   t.pull0 = t.finIn1 + 0.2; t.pull1 = t.pull0 + Math.max(0.7, P.pull / 22);
   t.finUp0 = t.pull1 + 0.2; t.finUp1 = t.finUp0 + 0.45; t.creep1 = t.finUp0 + 0.08;
@@ -359,17 +379,25 @@ function toyState(t) {
     x = XR + r.x * 100; th = th0 + r.th; phi = th0 + r.phi; s = r.s * 100; st.run = r;
   }
   st.x = x; st.th = th; st.phi = phi; st.fth = (x - TL.XA) / G.Rf;
-  st.wound = t < TL.slot[16] + TL.dur ? 0 : s;
+  st.wound = t < TL.slot[16] ? 0 : s;
   const L0 = P.bandL0;
-  st.bandLen = (t < TL.slot[16] + TL.dur * 0.7) ? L0 : G.lam0 * L0 + s;
+  st.bandLen = (t < TL.slot[16]) ? L0 : G.lam0 * L0 + s;
   // head nod (bistable trigger) pulls the rod forward, which swings the pawl tip out of the teeth
   const nodU = t < TL.tap0 ? 0 : minJerk((t - TL.tap0) / (TL.tap1 - TL.tap0));
   st.nod = -15 * DEG * nodU;
   st.rod = 0.116 * nodU;
-  const seated = pawlAngleFor(ratchetR(phi));
+  const phiSeat = t >= TL.tap0 ? -(rolledCm - creepCm) / R : phi;
+  const seated = pawlAngleFor(ratchetR(phiSeat));
   st.pawl = seated - (st.rod / G.pawlArm);
   st.pawlR = pawlTipRadius(st.pawl);
-  st.toy = T(x, 0, 0);
+  let yaw = 0, z = 0, pitch = 0;
+  if (st.run) {
+    const xr = st.run.x * 100, psi = 1.2 * DEG; // small heading bias from tyre/axle tolerances
+    yaw = -psi * smooth(xr / 20); z = Math.sin(psi) * Math.max(0, xr - 10 * smooth(xr / 20));
+    pitch = 0.3 * DEG * clamp(st.run.a / 5, -0.4, 1); // O-ring squat at launch
+  }
+  st.z = z;
+  st.toy = chain(T(x, 0, z), Ry(yaw), T(G.axR[0], 0, 0), Rz(pitch), T(-G.axR[0], 0, 0));
   return st;
 }
 
@@ -408,43 +436,42 @@ function partPose(i, st, t) {
   if (i === IDX.EGGB) return EGG_B;
   if (i === IDX.EGGT) return EGG_T;
   if (i === IDX.CASE) return CASE;
-  const fin = pcomp(st.toy, mountPose(i, st));
-  const t0 = TL.slot[i];
-  const u = (t - t0) / TL.dur;
-  if (u >= 1) return fin;
-  const kit = kitPose(i);
-  if (u <= 0) return kit;
-  const c = PARTS[i].c;
-  const cK = papply(kit, c), cF = papply(fin, c);
-  const app = PARTS[i].app, appN = v3.norm(app);
-  const cA = v3.add(cF, app);
-  const seed = i * 7.13;
-  let q, cp;
-  if (u < 0.12) { const w = smooth(u / 0.12); cp = v3.add(cK, [0, 1.8 * w, 0]); q = kit.q; }
-  else if (u < 0.78) {
-    const w = smooth((u - 0.12) / 0.66);
-    const p0 = v3.add(cK, [0, 1.8, 0]), p3 = cA;
-    const lift = 4 + 0.1 * v3.len(v3.sub(p3, p0));
-    const p1 = v3.add(p0, [0, lift, 0]), p2 = v3.add(p3, v3.add(v3.mul(appN, 2.0), [0, lift * 0.4, 0]));
-    cp = bezier(p0, p1, p2, p3, w);
-    // small hand-held wobble during transport
-    const wob = Math.sin(Math.PI * w) * 0.05;
-    const wq = q4.euler(wob * Math.sin(u * 23 + seed), wob * Math.sin(u * 17 + seed * 2), wob * Math.sin(u * 29 + seed * 3));
-    q = q4.mul(q4.slerp(kit.q, fin.q, smooth(clamp((w - 0.05) / 0.85, 0, 1))), wq);
-  } else {
-    // insert along the approach axis, overshoot 0.4 mm into the seat and spring back (snap-fit click)
-    const w = (u - 0.78) / 0.22;
-    const ins = minJerk(Math.min(1, w / 0.8));
-    const over = w > 0.7 ? 0.04 * Math.sin(Math.PI * clamp((w - 0.7) / 0.3, 0, 1)) : 0;
-    cp = v3.add(v3.lerp(cA, cF, ins), v3.mul(appN, -over)); q = fin.q;
-  }
-  return { q, p: v3.sub(cp, q4.rot(q, c)) };
+  // time-lapse assembly: between two frames each part goes from the kit straight to its seat
+  if (t < TL.slot[i]) return kitPose(i);
+  return pcomp(st.toy, mountPose(i, st));
 }
-
+function quatFromBasis(x, y, z) { // columns x, y, z
+  const m00 = x[0], m11 = y[1], m22 = z[2], tr = m00 + m11 + m22;
+  let q;
+  if (tr > 0) { const S = Math.sqrt(tr + 1) * 2; q = [(y[2] - z[1]) / S, (z[0] - x[2]) / S, (x[1] - y[0]) / S, 0.25 * S]; }
+  else if (m00 > m11 && m00 > m22) { const S = Math.sqrt(1 + m00 - m11 - m22) * 2; q = [0.25 * S, (y[0] + x[1]) / S, (z[0] + x[2]) / S, (y[2] - z[1]) / S]; }
+  else if (m11 > m22) { const S = Math.sqrt(1 + m11 - m00 - m22) * 2; q = [(y[0] + x[1]) / S, 0.25 * S, (z[1] + y[2]) / S, (z[0] - x[2]) / S]; }
+  else { const S = Math.sqrt(1 + m22 - m00 - m11) * 2; q = [(z[0] + x[2]) / S, (z[1] + y[2]) / S, 0.25 * S, (x[1] - y[0]) / S]; }
+  const l = Math.hypot(...q); return q.map((c) => c / l);
+}
+function handFrame(d, yawDeg) {
+  const y = v3.norm(d);
+  if (Math.abs(y[1]) > 0.85) return q4.axis([0, 1, 0], yawDeg * DEG);
+  const x = v3.norm(v3.sub([0, -1, 0], v3.mul(y, -y[1])));
+  return quatFromBasis(x, y, v3.cross(x, y));
+}
+function asmHand(t, st) {
+  for (let k = 0; k < ASM_ORDER.length; k++) {
+    const i = ASM_ORDER[k], t0 = TL.slot[i];
+    if (t >= t0 && t < t0 + HAND_HOLD) {
+      const pr = PRESS[i]; const c = papply(st.toy, pr.slice(0, 3));
+      return { pose: pose(c, handFrame(pr.slice(3), -28 + 16 * Math.sin(k * 1.7))), press: 1 };
+    }
+  }
+  return null;
+}
 const toyStateCache = { xTap1: 0 };
 function handPose(t, st) {
-  if (!P.showHand || t < TL.finIn0 || t > TL.finOut1) return null;
-  const yaw = Ry(-28 * DEG);
+  if (!P.showHand) return null;
+  if (t < TL.finIn0) { const a = asmHand(t, st); return a ? a.pose : null; }
+  if (t > TL.finOut1) return null;
+  const lean = 22 * DEG * smooth((t - TL.pull0) / 0.25) * (1 - smooth((t - TL.pull1) / 0.2));
+  const yaw = chain(Ry(-28 * DEG), Rz(lean));
   const back = (x) => [x + 3.0, 3.27, 0];
   const headPt = (nod) => { const lp = [0.175, 1.85, 0]; const r = q4.rot(q4.axis([0, 0, 1], nod), lp); return v3.add(G.neck, r); };
   const toyX = st.x;
@@ -459,6 +486,7 @@ function handPose(t, st) {
   return pcomp(T(...c), yaw);
 }
 function pressAt(t) { // fingertip pad compression (0..1)
+  if (t < TL.finIn0) return 1;
   const ramp = (a, b) => smooth((t - a) / (b - a));
   const backP = ramp(TL.finIn1 - 0.12, TL.finIn1) * (1 - ramp(TL.finUp0, TL.finUp0 + 0.1));
   const tapP = ramp(TL.tap0 - 0.04, TL.tap0 + 0.02) * (1 - ramp(TL.tap1, TL.tap1 + 0.08));
@@ -470,10 +498,10 @@ const cam = { az: 38 * DEG, el: 24 * DEG, dist: 46, target: [20, 1.5, 12], fov: 
 let camSpec = null; // manual capture camera: { track, dx, dy, dz }
 function toyXAt(t) { return toyState(clamp(t, 0, TL.end)).x; }
 function followX(t) { // critically damped camera-operator follow of the toy (deterministic: integrated over the last 2 s)
-  const w = 9.0, h = 1 / 240; let t0 = Math.max(0, t - 1.5);
+  const w = 16.0, h = 1 / 240; let t0 = Math.max(0, t - 1.0);
   let x = toyXAt(t0), v = 0;
   for (let tt = t0; tt < t; tt += h) { const xt = toyXAt(tt); const a = w * w * (xt - x) - 2 * w * v; v += a * h; x += v * h; }
-  return lerp(x, toyXAt(t), 0.45); // an operator half-anticipates the move
+  return lerp(x + v * 0.12, toyXAt(t), 0.5); // the operator leads the move a little
 }
 function directorCam(t) {
   const fx = followX(t);
@@ -498,7 +526,7 @@ function directorCam(t) {
   const m1 = (k0 === k1) ? k1.v.map(() => 0) : tan(k0, k1, k2), m2 = (k3 === k2) ? k2.v.map(() => 0) : tan(k1, k2, k3);
   const h00 = 2 * u ** 3 - 3 * u ** 2 + 1, h10 = u ** 3 - 2 * u ** 2 + u, h01 = -2 * u ** 3 + 3 * u ** 2, h11 = u ** 3 - u ** 2;
   const v = k1.v.map((_, j) => h00 * k1.v[j] + h10 * m1[j] + h01 * k2.v[j] + h11 * m2[j]);
-  const A = P.handheld ? 0.16 : 0;
+  const A = P.handheld ? (t < TL.asmEnd ? 0.02 : 0.16) : 0;
   const az = v[0] + A * (0.6 * Math.sin(2 * Math.PI * 0.53 * t + 0.3) + 0.4 * Math.sin(2 * Math.PI * 1.27 * t + 1.1));
   const el = v[1] + A * (0.5 * Math.sin(2 * Math.PI * 0.71 * t + 2.0) + 0.5 * Math.sin(2 * Math.PI * 1.73 * t + 0.4));
   return { az: az * DEG, el: el * DEG, dist: v[2], target: [v[3], v[4], v[5]] };
@@ -519,7 +547,7 @@ in vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
 function partSDFCall() {
   const fns = ['pKeelR', 'pKeelF', 'pShellR', 'pShellF', 'pHead', 'pFlip', 'pFlip', 'pTail', 'pFeet', 'pWheelR', 'pWheelR', 'pWheelF', 'pWheelF', 'pAxleR', 'pAxleF', 'pSpool', 'pBand', 'pPawl', 'pRod', 'pEggB', 'pEggT', 'pHand', 'pCase', 'pArm'];
-  return fns.map((f, i) => `  if(((mask>>${i})&1)!=0){ vec4 b=uB[${i}]; float db=length(p-b.xyz)-b.w; if(db<res.x){ if(db>0.35) { res=vec3(db,0.,-1.); } else { bool cu=((uCutMask>>${i})&1)==1; vec3 q=(uM[${i}]*vec4(p,1.)).xyz; vec2 r=${f}(q,cu); if(cu) r.x=max(r.x,p.z-uCut); if(r.x<res.x) res=vec3(r,${i}.); } } }`).join('\n');
+  return fns.map((f, i) => `  if(((mask>>${i})&1)!=0){ vec4 b=uB[${i}]; float db=length(p-b.xyz)-b.w; if(db<res.x){ if(db>gSkip) { res=vec3(db,0.,-1.); } else { bool cu=((uCutMask>>${i})&1)==1; vec3 q=(uM[${i}]*vec4(p,1.)).xyz; vec2 r=${f}(q,cu); if(cu) r.x=max(r.x,p.z-uCut); if(r.x<res.x) res=vec3(r,${i}.); } } }`).join('\n');
 }
 
 const FS_COMMON = `
@@ -535,8 +563,8 @@ uniform float uLayer; uniform vec3 uWinL, uPanL; uniform float uPix;
 uniform float uHoleK, uPress; uniform vec3 uSunDir, uSunE;
 uniform sampler2D uTape; uniform sampler2D uLabel; uniform sampler2D uPrev;
 
-const float SEAM=1.65, SPLITX=4.2, GAP=0.018, WALL=0.12;
-const vec3 NECK=vec3(9.9,2.25,0.);
+const float SEAM=1.65, SPLITX=4.2, GAP=0.035, WALL=0.12;
+const vec3 NECK=vec3(${G.neck.map((x) => x.toFixed(4)).join(',')});
 const float RX0=-80., RX1=420., RZ=150., RH=270.;
 
 uint gSeed;
@@ -591,7 +619,8 @@ float sdRoundCone(vec3 p, vec3 a, vec3 b, float r1, float r2){
 
 /* ---------- toy parts (local frames, cm) ---------- */
 const vec3 BC=vec3(4.2,1.75,0.), BR=vec3(6.2,1.55,1.75);
-const vec3 AXR=vec3(1.2,1.0,0.), AXF=vec3(7.8,0.6,0.);
+const vec3 AXR=vec3(${G.axR.map((x) => x.toFixed(4)).join(',')}), AXF=vec3(${G.axF.map((x) => x.toFixed(4)).join(',')});
+const float ANCHORX=${G.anchorX.toFixed(4)}; const vec3 PAWLP=vec3(${G.pawl.map((x) => x.toFixed(4)).join(',')});
 float bodyD(vec3 q){ return sdEllipsoid(q-BC,BR); }
 float wellR(vec3 q){ vec3 w=q-vec3(AXR.x,0.9,0.); w.z=abs(w.z)-0.88; return sdRoundBox(w,vec3(1.12,1.05,0.30),0.1); }
 float wellF(vec3 q){ vec3 w=q-vec3(AXF.x,0.6,0.); w.z=abs(w.z)-0.6; return sdRoundBox(w,vec3(0.75,0.75,0.24),0.08); }
@@ -607,7 +636,11 @@ vec2 pKeelR(vec3 q,bool cut){
   d=min(d,max(bush,q.y-(SEAM-GAP)));
   d=max(d,-sdCylZ(q-AXR,0.108,3.));
   vec2 r=vec2(d,M_WHITE);
-  if(cut){ float bl=sdRoundBox(q-vec3(-0.3,1.3,0.),vec3(0.55,0.28,0.55),0.04); if(bl<r.x) r=vec2(bl,M_STEEL); }
+  if(cut){
+    float bl=sdRoundBox(q-vec3(-0.3,1.3,0.),vec3(0.55,0.28,0.55),0.04); if(bl<r.x) r=vec2(bl,M_STEEL);
+    vec3 bq=q-AXR; bq.z=abs(bq.z)-1.305; float rr=length(bq.xy);
+    float race=max(max(rr-0.25,0.105-rr),abs(bq.z)-0.125); if(race<r.x) r=vec2(race,M_STEEL);
+  }
   return r;
 }
 vec2 pKeelF(vec3 q,bool cut){
@@ -620,18 +653,21 @@ vec2 pKeelF(vec3 q,bool cut){
   d=smax(d,-wellF(q),0.03);
   d=smax(d,-(length(q-NECK)-1.0),0.04);
   d=max(d,-sdCylZ(q-AXF,0.082,3.));
-  d=min(d,sdCapsule(q,vec3(9.1,0.95,0.),vec3(9.1,1.4,0.),0.09));
+  d=min(d,sdCapsule(q,vec3(ANCHORX,0.95,0.),vec3(ANCHORX,1.4,0.),0.09));
+  // band stop rib: the band's tail loop parks here at full payout so the line goes slack
+  vec3 sp=q-vec3(ANCHORX-1.1*uBandL0-0.19,0.,0.); sp.z=abs(sp.z)-0.12;
+  d=min(d,max(sdCapsule(sp,vec3(0.,0.85,0.),vec3(0.,1.33,0.),0.04),b));
   return vec2(d,M_WHITE);
 }
 vec2 pShellR(vec3 q,bool cut){
-  float b=bodyD(q);
+  float b=bodyD(q)-0.012*exp(-max(q.y-SEAM-GAP,0.)/0.025);
   float d=smax(b,(SEAM+GAP)-q.y,0.03);
   d=smax(d,q.x-(SPLITX-GAP),0.03);
   if(cut) d=max(d,-(b+WALL));
   return vec2(d,M_BLACK);
 }
 vec2 pShellF(vec3 q,bool cut){
-  float b=bodyD(q);
+  float b=bodyD(q)-0.01;
   float d=smax(b,(SEAM+GAP)-q.y,0.03);
   d=smax(d,(SPLITX+GAP)-q.x,0.03);
   d=smax(d,-(length(q-NECK)-1.0),0.04);
@@ -667,23 +703,28 @@ vec2 pFeet(vec3 q,bool cut){
   d=smin(d,sdCapsule(s,vec3(-1.35,1.25,0.42),F+vec3(0.35,0.05,-0.05),0.15),0.12);
   return vec2(d,M_ORANGE);
 }
-// rear wheel: 20 mm hub with O-ring tyre, lightening holes, and a freewheel (3 flexure pawls) around the axle ratchet ring
+// rear wheel: 20 mm hub with O-ring tyre and lightening holes. It turns on its own MR52 bearing and is driven
+// one-way by a curved flexure pawl riding an 8-tooth ratchet ring fixed to the axle (the freewheel)
 vec2 pWheelR(vec3 q,bool cut){
   float r=length(q.xy);
   float hub=sdCylZ(q,0.86,0.21)-0.015;
   hub=max(hub,-(length(vec2(r-0.88,q.z))-0.125));
   float a=atan(q.y,q.x); float sec=2.*PI/5.; float aa=mod(a+sec*0.5,sec)-sec*0.5;
   vec2 hp=vec2(cos(aa),sin(aa))*r;
-  hub=max(hub,-(length(hp-vec2(0.6,0.))-0.14*uHoleK));
-  hub=max(hub,-sdCylZ(q,0.34,0.4));
-  float s3=2.*PI/3.; float a3=mod(a,s3)-s3*0.5; vec2 pp=vec2(cos(a3),sin(a3))*r;
-  float paw=max(sdBox2(pp-vec2(0.31,0.06),vec2(0.035,0.11)),abs(q.z)-0.16);
-  hub=min(hub,paw);
-  float lip=max(sdCylZ(q-vec3(0.,0.,0.22),0.4,0.04)-0.01,0.34-r);
+  hub=max(hub,-(length(hp-vec2(0.64,0.))-0.12*uHoleK));
+  hub=max(hub,-sdCylZ(q,0.5,0.4));                          // pocket for bearing + clutch
+  // curved flexure pawl (0.4 mm thick, about 10 mm long) from the pocket wall to the ring teeth
+  vec2 pc=q.xy-vec2(-0.1,0.18); float arc=abs(length(pc)-0.42)-0.02;
+  float paw=max(max(arc,abs(q.z+0.1)-0.07),max(-q.y+0.0,q.x-0.38));
+  hub=min(hub,max(paw,r-0.5));
+  float lip=max(sdCylZ(q-vec3(0.,0.,0.22),0.4,0.04)-0.01,0.25-r);
   hub=min(hub,lip);
   vec2 res=vec2(hub,M_ORANGE);
   float o=length(vec2(r-0.88,q.z))-0.12;
   if(o<res.x) res=vec2(o,M_RUBBER);
+  // MR52 bearing (2 x 5 x 2.5 mm) on the outer side of the hub
+  float race=max(max(r-0.25,0.105-r),abs(q.z-0.1)-0.125);
+  if(race<res.x) res=vec2(race,M_STEEL);
   return res;
 }
 vec2 pWheelF(vec3 q,bool cut){
@@ -700,14 +741,14 @@ vec2 pWheelF(vec3 q,bool cut){
 // 2 mm steel rear axle carrying two 12-tooth ratchet rings (inside the wheel hubs)
 vec2 pAxleR(vec3 q,bool cut){
   vec2 res=vec2(sdCylZ(q,0.09,1.28)-0.01,M_STEEL);
-  vec3 rq=q; rq.z=abs(rq.z)-0.88;
-  float r=length(rq.xy); float a=atan(rq.y,rq.x); float f=fract(a*12./(2.*PI));
-  float ring=max((r-(0.2+0.075*(1.-f)))*0.6,abs(rq.z)-0.13);
+  vec3 rq=q; rq.z=abs(rq.z)-0.78;
+  float r=length(rq.xy); float a=atan(rq.y,rq.x); float f=fract(a*8./(2.*PI));
+  float ring=max((r-(0.24+0.05*(1.-f)))*0.6,abs(rq.z)-0.07);
   ring=max(ring,-(r-0.104));
   if(ring<res.x) res=vec2(ring,M_GRAY);
   return res;
 }
-vec2 pAxleF(vec3 q,bool cut){ return vec2(sdCylZ(q,0.068,0.8)-0.007,M_STEEL); }
+vec2 pAxleF(vec3 q,bool cut){ return vec2(sdCylZ(q,0.068,0.72)-0.007,M_STEEL); }
 vec2 pSpool(vec3 q,bool cut){
   float r=length(q.xy);
   float col=min(sdCylZ(q-vec3(0.,0.,0.3),0.36,0.045),sdCylZ(q-vec3(0.,0.,-0.3),0.36,0.045));
@@ -724,9 +765,9 @@ vec2 pSpool(vec3 q,bool cut){
 vec2 pBand(vec3 q,bool cut){
   float L=uBandLen; float lam=max(L/uBandL0,1.0);
   float th=0.08/sqrt(lam), wd=0.16/sqrt(lam);
-  float ax=9.1, xe=ax-L, y0=1.12, sep=0.13;
+  float ax=ANCHORX, xe=ax-L, y0=AXR.y+0.12, sep=0.13;
   vec3 m=q-vec3((ax+xe)*0.5,y0,0.); m.z=abs(m.z)-sep;
-  float strands=sdRoundBox(m,vec3(L*0.5,wd*0.5,th*0.5),th*0.45);
+  float strands=max(abs(m.x)-L*0.5,length(vec2(m.y/(wd*0.5),m.z/(th*0.5)))*min(wd,th)*0.5-min(wd,th)*0.5);
   vec3 a1=q-vec3(ax,y0,0.); float arc1=max(sdBox2(vec2(length(a1.xz)-sep,a1.y),vec2(th*0.5,wd*0.5)),-a1.x);
   vec3 a2=q-vec3(xe,y0,0.); float arc2=max(sdBox2(vec2(length(a2.xz)-sep,a2.y),vec2(th*0.5,wd*0.5)),a2.x);
   vec2 res=vec2(min(strands,min(arc1,arc2)),M_BAND);
@@ -741,7 +782,13 @@ vec2 pPawl(vec3 q,bool cut){
   d=min(d,sdCylZ(q,0.06,0.14));
   return vec2(d,M_GRAY);
 }
-vec2 pRod(vec3 q,bool cut){ return vec2(sdCapsule(q,vec3(2.06,2.0,0.45),vec3(9.9,2.70,0.45),0.045),M_GRAY); }
+vec2 pRod(vec3 q,bool cut){
+  vec3 A=PAWLP+vec3(0.1,0.34,0.), B=NECK+vec3(0.,0.45,AXR.z+0.45-NECK.z);
+  A.z=0.45; B.z=0.45;
+  float d=sdCapsule(q,A+vec3(0.12,0.,0.),B,0.045);
+  vec3 h=q-A; float hook=max(length(vec2(length(h.xy)-0.085,h.z))-0.03,-h.x-0.02);
+  return vec2(min(d,hook),M_GRAY);
+}
 float eggOuter(vec3 q,float hc,float hd){
   float cyl=max(length(q.xz)-3.75,max(q.y,-hc-q.y));
   float cap=max(sdEllipsoid(q-vec3(0.,-hc,0.),vec3(3.75,hd,3.75)),q.y+hc);
@@ -769,7 +816,6 @@ vec2 pHand(vec3 q,bool cut){
   // dorsal creases over the DIP and PIP joints
   vec3 n1=vec3(0.954,0.301,0.);
   float cr=exp(-pow(dot(pq-D,normalize(HU1+HU2))/0.05,2.))+exp(-pow(dot(pq-Pp,normalize(HU2+HU3))/0.06,2.));
-  f+=0.025*cr*smoothstep(-0.2,0.6,dot(normalize(pq-Tt),n1));
   vec3 hc=K+HU3*2.6+vec3(0.,-0.3,-0.9);
   vec3 hv=pq-hc; vec3 lq=vec3(dot(hv,HU3),dot(hv,vec3(-HU3.y,HU3.x,0.)),hv.z);
   float palm=sdEllipsoid(lq,vec3(3.7,1.45,2.6));
@@ -810,6 +856,7 @@ vec2 pCase(vec3 q,bool cut){
 }
 
 uniform int uVisMask;
+float gSkip=0.35; // beyond this bounding-sphere distance a part is not evaluated exactly
 vec3 mapM(vec3 p, int mask){
   vec3 res=vec3(1e9,0.,-1.);
 ${partSDFCall()}
@@ -863,20 +910,23 @@ float occluded(vec3 ro, vec3 rd, float tmax){
 }
 // SDF soft shadow toward a large area light; long-range penumbrae fade out because a few-cm toy
 // barely dims a metre-wide window seen from far away
+int gShadowSkip=0;
 float softShadow(vec3 ro, vec3 rd, float tmax, float k){
-  vec2 iv; int mask=rayMask(ro,rd,tmax,iv)&~((1<<16)|(1<<18));
+  vec2 iv; int mask=rayMask(ro,rd,tmax,iv)&~((1<<16)|(1<<18)|gShadowSkip);
   if(mask==0) return 1.;
   float res=1.; float t=max(iv.x,0.02), t1=min(iv.y,tmax); float ph=1e10;
+  gSkip=2.5; // penumbra estimates need true distances, not bounding-sphere ones (avoids ring banding)
   for(int i=0;i<80;i++){
     if(t>t1) break;
     float h=mapM(ro+rd*t,mask).x;
-    if(h<max(0.0008,t*uPix*0.25)) return 0.;
+    if(h<max(0.0008,t*uPix*0.25)){ gSkip=0.35; return 0.; }
     float y=h*h/(2.0*ph); float d=sqrt(max(h*h-y*y,0.));
     float c=clamp(k*d/max(1e-3,t-y),0.,1.);
     c=mix(1.,c,exp(-t/18.));
     res=min(res,c); ph=h;
-    t+=clamp(h,0.004,1.5);
+    t+=clamp(h,0.02,1.5);
   }
+  gSkip=0.35;
   res=clamp(res,0.,1.); return res*res*(3.-2.*res);
 }
 
@@ -887,15 +937,24 @@ const vec3 FB1n=vec3(150.,72.,-150.), FB1x=vec3(292.,76.,-84.);  // table top
 const vec3 CH0n=vec3(204.,44.,-120.), CH0x=vec3(244.,47.,-80.);     // chair seat
 const vec3 CH1n=vec3(242.,47.,-119.), CH1x=vec3(245.,92.,-81.);     // chair back
 const vec3 BIN=vec3(-52.,0.,72.); const float BINR=14., BINH=38.;
+#define M_TAPE 29.
+#define M_PTAPE 30.
+#define M_RAD 31.
+#define M_LAPTOP 32.
+#define M_MUG 33.
+const float TZ0=-9.27, TZ1=-6.73;
 void boxT(vec3 ro, vec3 ird, vec3 mn, vec3 mx, float id, inout float t, inout vec3 n, inout float mat){
   vec2 b=boxHit(ro,ird,mn,mx);
   if(b.x>0.&&b.x<b.y&&b.x<t){ t=b.x; mat=id; vec3 c=(mn+mx)*.5, h=(mx-mn)*.5; vec3 q=(ro+(1./ird)*b.x-c)/h; vec3 a=abs(q); n=a.x>a.y&&a.x>a.z?vec3(sign(q.x),0,0):(a.y>a.z?vec3(0,sign(q.y),0):vec3(0,0,sign(q.z))); }
 }
-float binHit(vec3 ro, vec3 rd){
-  vec2 o=ro.xz-BIN.xz, d=rd.xz; float a=dot(d,d), b=dot(o,d), c=dot(o,o)-BINR*BINR; float h=b*b-a*c;
-  if(h<0.||a<1e-9) return -1.; float t=(-b-sqrt(h))/a; float y=ro.y+rd.y*t;
-  return (t>0.&&y>0.&&y<BINH)?t:-1.;
+float cylHit(vec3 ro, vec3 rd, vec2 c, float R, float y0, float y1, out vec3 n){
+  vec2 o=ro.xz-c, d=rd.xz; float a=dot(d,d), b=dot(o,d), cc=dot(o,o)-R*R; float h=b*b-a*cc;
+  float tb=-1.;
+  if(h>=0.&&a>1e-9){ float t=(-b-sqrt(h))/a; float y=ro.y+rd.y*t; if(t>0.&&y>y0&&y<y1){ tb=t; vec3 p=ro+rd*t; n=normalize(vec3(p.x-c.x,0.,p.z-c.y)); } }
+  if(rd.y<0.){ float t=(y1-ro.y)/rd.y; vec3 p=ro+rd*t; if(t>0.&&length(p.xz-c)<R&&(tb<0.||t<tb)){ tb=t; n=vec3(0,1,0); } }
+  return tb;
 }
+float binHit(vec3 ro, vec3 rd){ vec3 n; return cylHit(ro,rd,BIN.xz,BINR,0.,BINH,n); }
 vec4 traceRoom(vec3 ro, vec3 rd, out vec3 n){
   vec3 ird=safeInv(rd);
   vec3 lo=vec3(RX0,0.,-RZ), hi=vec3(RX1,RH,RZ);
@@ -916,6 +975,15 @@ vec4 traceRoom(vec3 ro, vec3 rd, out vec3 n){
   }
   boxT(ro,ird,CH0n,CH0x,M_CHAIR,t,n,mat);
   boxT(ro,ird,CH1n,CH1x,M_CHAIR,t,n,mat);
+  // tape-measure blade (0.5 mm incl. its cupped edges), its steel end hook, painter's tape strips
+  boxT(ro,ird,vec3(0.,0.,TZ0),vec3(306.9,0.05,TZ1),M_TAPE,t,n,mat);
+  boxT(ro,ird,vec3(-0.05,0.,TZ0+0.08),vec3(0.85,0.085,TZ1-0.08),M_STEEL,t,n,mat);
+  boxT(ro,ird,vec3(-2.4,0.,-11.),vec3(0.,0.012,11.),M_PTAPE,t,n,mat);
+  boxT(ro,ird,vec3(250.,0.,-11.),vec3(252.4,0.012,11.),M_PTAPE,t,n,mat);
+  // panel radiator under the window, closed laptop and a mug on the table
+  boxT(ro,ird,vec3(70.,14.,141.),vec3(250.,74.,148.),M_RAD,t,n,mat);
+  boxT(ro,ird,vec3(194.,76.,-136.),vec3(228.,77.7,-113.),M_LAPTOP,t,n,mat);
+  vec3 cn; float tm=cylHit(ro,rd,vec2(242.,-100.),4.,76.,85.5,cn); if(tm>0.&&tm<t){ t=tm; mat=M_MUG; n=cn; }
   float tb=binHit(ro,rd); if(tb>0.&&tb<t){ t=tb; mat=M_BIN; vec3 p=ro+rd*t; n=normalize(vec3(p.x-BIN.x,0.,p.z-BIN.z)); }
   return vec4(t,mat,0.,0.);
 }
@@ -985,7 +1053,7 @@ Mat floorMat(vec3 p, inout vec3 n, float fp){
     float crepe=vnoise(xz*vec2(3.,40.))*0.5+vnoise(xz*vec2(40.,6.))*0.5;
     vec3 c=vec3(0.035,0.16,0.42)*(0.88+0.2*crepe);
     float ux=(xz.y+11.)/22.; float vy=(xz.x-(st?sx:fx))/2.4;
-    float ink=texture(uLabel,vec2(1.-ux,(st?0.5:0.)+(1.-vy)*0.5)).r;
+    float ink=st?texture(uLabel,vec2(1.-ux,0.5+(1.-vy)*0.5)).r:texture(uLabel,vec2(ux,vy*0.5)).r;
     c=mix(c,vec3(0.012),ink*0.92);
     m.alb=c; m.rough=0.82; m.coat=0.;
     return m;
@@ -1043,7 +1111,7 @@ Mat getMat(float id, int part, vec3 p, inout vec3 n, float t){
   }
   else if(id==M_RUBBER){ m.alb=vec3(0.018); m.rough=0.62; m.spec=0.45; }
   else if(id==M_STEEL){ m.alb=vec3(0.62,0.63,0.65); m.metal=1.; m.rough=0.22; }
-  else if(id==M_BAND){ m.alb=vec3(0.45,0.24,0.08); m.rough=0.3; m.coat=0.35; m.coatR=0.25; m.sss=0.5; }
+  else if(id==M_BAND){ m.alb=vec3(0.55,0.30,0.07); m.rough=0.25; m.coat=0.6; m.coatR=0.18; m.sss=0.8; }
   else if(id==M_STRING){ m.alb=vec3(0.82,0.82,0.8); m.rough=0.85; }
   else if(id==M_EYE){ m.alb=vec3(0.006); m.rough=0.06; m.coat=1.; m.coatR=0.03; }
   else if(id==M_EGG){ m.alb=vec3(0.92,0.36,0.03); m.rough=0.22; m.sss=0.4; }
@@ -1063,9 +1131,12 @@ Mat getMat(float id, int part, vec3 p, inout vec3 n, float t){
     float crease=(c1+c2)*(0.55+0.45*wr);
     float tip=smoothstep(1.6,0.3,q.y);
     float blot=fbm(q.xy*3.1+q.z*2.);
-    m.alb=mix(vec3(0.60,0.36,0.26),vec3(0.66,0.30,0.22),0.35*tip+0.25*blot);
-    m.alb*=1.-0.28*crease;
-    m.rough=0.42+0.18*crease+0.1*fbm(q.xy*40.); m.sss=1.0; m.spec=0.6;
+    float knuck=exp(-pow(length(q.xy-vec2(-4.5,6.6))/1.2,2.));
+    m.alb=mix(vec3(0.60,0.36,0.26),vec3(0.66,0.30,0.22),0.35*tip+0.25*blot+0.3*knuck);
+    m.alb*=1.-0.22*crease;
+    m.rough=0.5+0.15*crease+0.1*fbm(q.xy*40.); m.sss=1.0; m.spec=0.55;
+    m.coat=0.25; m.coatR=0.32;   // thin sebum sheen over the rough skin lobe
+    n=normalize(n-crease*0.25*normalize(n-HU2*dot(n,HU2)+vec3(1e-4))*sign(dot(q,vec3(0.954,0.301,0.))));
     m.alb=mix(m.alb,vec3(0.74,0.60,0.50),uPress*smoothstep(0.16,0.02,q.y)*0.8);   // blanching where the pad presses
     n=normalize(n+vec3(fbm(q.yz*55.)-0.5,fbm(q.xz*55.)-0.5,fbm(q.xy*55.)-0.5)*0.06);
   }
@@ -1095,6 +1166,10 @@ Mat getMat(float id, int part, vec3 p, inout vec3 n, float t){
     // contour terracing on near-horizontal surfaces: flat treads with rounded risers
     vec3 gN=normalize(g); float ndg=dot(n,gN); float kk=fract(s/0.02);
     float top=smoothstep(0.35,0.8,abs(ndg))*uLayer*fade;
+#if PT==1
+    top*=2.0;
+#endif
+    m.rough+=0.06*uLayer*(hash11(floor(s/0.02)*1.7+float(part))-0.5);
     vec3 nFlat=sign(ndg)*gN, nStep=normalize(n-gN*ndg*0.5);
     vec3 nt=normalize(mix(nFlat,nStep,1.-smoothstep(0.0,0.3,kk)));
     n=normalize(mix(n,nt,top*0.35));
@@ -1130,11 +1205,32 @@ Mat roomMat(vec3 p, float mat, inout vec3 n, float t){
       vec2 o=vec2(p.x-238.,p.y-31.); if(abs(o.x)<3.5&&abs(o.y)<5.8){ m.alb=vec3(0.75,0.74,0.7); m.rough=0.35; if(length(vec2(abs(o.x)-1.2,o.y-2.))<0.35||length(vec2(abs(o.x)-1.2,o.y+2.))<0.35) m.alb=vec3(0.05); }
     }
     m.alb*=0.96+0.06*vnoise(p.xy*0.02+p.zz*0.02);
+    float peel=vnoise((p.xy+p.zz)*1.7); m.rough=clamp(m.rough-0.12*vnoise(p.xy*0.03+p.zx*0.03),0.3,1.);
+    n=normalize(n+(vec3(vnoise(p.yz*2.1),vnoise(p.xz*2.3),vnoise(p.xy*1.9))-0.5)*0.04*(0.5+peel));
   } else if(mat==M_CEIL){ m.alb=vec3(0.7,0.7,0.68); m.rough=0.9; }
   else if(mat==M_CAB){ m.alb=vec3(0.24,0.26,0.28); m.rough=0.42; if(abs(p.y-46.)<0.6||abs(p.z+86.)<0.5) m.alb*=0.3; }
   else if(mat==M_TABLE){ m.alb=vec3(0.52,0.52,0.5); m.rough=0.35; }
   else if(mat==M_CHAIR){ m.alb=vec3(0.035,0.04,0.05); m.rough=0.55; }
+  else if(mat==M_TAPE){
+    vec2 uv=vec2((p.x+0.5)/320.,(p.z-TZ0)/(TZ1-TZ0));
+    m.alb=srgb2lin(texture(uTape,uv).rgb); m.rough=0.3; m.coat=0.8; m.coatR=0.1;
+    if(n.y>0.5){ float zc=(p.z-(TZ0+TZ1)*0.5)/1.27; n=normalize(vec3(0.,1.,-zc*0.09)); }
+    else m.alb*=0.6;
+  }
+  else if(mat==M_PTAPE){
+    vec2 xz=p.xz; bool st=xz.x<1.; float sx=st?-2.4:250.;
+    float crepe=vnoise(xz*vec2(3.,40.))*0.5+vnoise(xz*vec2(40.,6.))*0.5;
+    vec3 c=vec3(0.035,0.16,0.42)*(0.88+0.2*crepe);
+    float ux=(xz.y+11.)/22.; float vy=(xz.x-sx)/2.4;
+    float ink=st?texture(uLabel,vec2(1.-ux,0.5+(1.-vy)*0.5)).r:texture(uLabel,vec2(ux,vy*0.5)).r;
+    m.alb=mix(c,vec3(0.012),ink*0.92); m.rough=0.82;
+    if(n.y<0.5) m.alb*=0.7;
+  }
+  else if(mat==M_RAD){ m.alb=vec3(0.78,0.78,0.76); m.rough=0.35; float fin=fract(p.y/2.5); if(n.z<-0.5){ n=normalize(n+vec3(0.,(fin-0.5)*0.6,0.)); m.alb*=0.85+0.15*smoothstep(0.,0.2,fin); } }
+  else if(mat==M_LAPTOP){ m.alb=vec3(0.42,0.43,0.45); m.rough=0.3; m.metal=0.8; if(n.y>0.5&&abs(p.x-211.)<2.&&abs(p.z+124.5)<1.6) m.alb*=0.6; }
+  else if(mat==M_MUG){ m.alb=vec3(0.78,0.77,0.73); m.rough=0.12; m.coat=0.6; m.coatR=0.05; if(n.y>0.5){ if(length(p.xz-vec2(242.,-100.))<3.6) m.alb=vec3(0.07,0.04,0.02); } }
   else if(mat==M_BIN){ m.alb=vec3(0.16,0.22,0.3); m.rough=0.5; m.alb*=0.9+0.1*sin(atan(p.z-BIN.z,p.x-BIN.x)*40.); }
+  else if(mat==M_STEEL){ m.alb=vec3(0.62,0.63,0.65); m.metal=1.; m.rough=0.28; }
   else if(mat==M_LEG){ m.alb=vec3(0.08,0.08,0.09); m.rough=0.3; m.metal=0.6; }
   return m;
 }
@@ -1212,6 +1308,7 @@ vec3 envRT(vec3 p, vec3 r, float a, vec3 up, vec3 dn){
 }
 vec3 shadeRT(Hit h, vec3 v, bool primary){
   Mat m=hitMat(h);
+  gShadowSkip=(h.mat==M_SKIN||h.mat==M_NAIL||h.mat==M_CLOTH)?((1<<21)|(1<<23)):0;
   vec3 n=h.n; vec3 col=vec3(0.);
   vec3 em=h.sdf?vec3(0.):emission(h.p,h.mat);
   if(dot(em,em)>0.) return em;
@@ -1223,7 +1320,7 @@ vec3 shadeRT(Hit h, vec3 v, bool primary){
     vec3 E=rectIrr(h.p,n,c,ex,ey)*L;
     vec3 toL=c-h.p; float dl=length(toL); vec3 ld=toL/dl;
     float sh=1.;
-    float bias=max(0.01,2.*h.t*uPix);
+    float bias=max(h.mat==M_SKIN?0.05:0.01,2.*h.t*uPix);
     if(primary){ float sz=length(ex)+length(ey); sh=softShadow(h.p+n*bias,ld,dl,2.0*dl/sz); }
     float wrap=m.sss*0.25;
     col+=m.alb*(1.-m.metal)/PI*E*sh*(1.-wrap)+m.alb*wrap*E/PI*0.8*(0.5+0.5*sh);
@@ -1250,7 +1347,7 @@ vec3 shadeRT(Hit h, vec3 v, bool primary){
     if(sw>0.){
       float bias=max(0.01,2.*h.t*uPix);
       float sh=sw*(1.-occludedRoom(h.p+n*0.02,uSunDir,500.));
-      if(primary && sh>0.) sh*=softShadow(h.p+n*bias,uSunDir,400.,60.);
+      if(primary && sh>0.) sh*=softShadow(h.p+n*bias,uSunDir,400.,25.);
       col+=m.alb*(1.-m.metal)/PI*uSunE*sNoL*sh;
       vec3 hh=normalize(v+uSunDir); float NoH=max(dot(n,hh),0.), VoH=max(dot(v,hh),0.), NoV=max(dot(n,v),1e-3);
       float a=max(m.rough*m.rough,0.02);
@@ -1282,7 +1379,8 @@ vec3 shadeRT(Hit h, vec3 v, bool primary){
       }
     }
   }
-  col+=(refl*F+reflC*Fc)*mix(1.,ao,0.7);
+  float rk=(1.-m.rough)*(1.-m.rough); float rkc=(1.-m.coatR)*(1.-m.coatR);
+  col+=(refl*F*mix(0.25,1.,rk)+reflC*Fc*mix(0.25,1.,rkc))*mix(1.,ao,0.7);
   return col;
 }
 vec3 render(vec2 fragCoord){
@@ -1429,7 +1527,11 @@ void main(){
   c*=exp2(uEV);
   vec2 uv=gl_FragCoord.xy/uRes; float vig=1.-0.22*pow(length((uv-0.5)*vec2(1.25,1.0))*1.25,2.2);
   c*=vig;
-  c=aces(c);
+  float Y=dot(c,vec3(0.2126,0.7152,0.0722));
+  float Yt=aces(vec3(Y)).x;
+  vec3 ct=c*(Yt/max(Y,1e-5));
+  ct=mix(ct,vec3(Yt),smoothstep(0.85,1.0,Yt)*0.6);
+  c=clamp(ct,0.,1.);
   c=pow(c,vec3(1./2.2));
   c+=(h(gl_FragCoord.xy+uSeed)-0.5)*0.018*uGrain;
   o=vec4(c,1.);
@@ -1586,7 +1688,7 @@ function sceneAt(t) {
   const st = toyState(t);
   if (t >= TL.tap1 && toyStateCache.tTap !== TL.tap1) { toyStateCache.xTap1 = toyState(TL.tap1).x; toyStateCache.tTap = TL.tap1; }
   const hand = handPose(t, st);
-  const enclosed = t >= Math.max(TL.slot[2], TL.slot[3]) + TL.dur && P.cut <= 0.001;
+  const enclosed = t >= Math.max(TL.slot[2], TL.slot[3]) && P.cut <= 0.001;
   let cutMask = 0, visMask = 0;
   for (let i = 0; i < NP; i++) {
     let ps;
@@ -1597,7 +1699,7 @@ function sceneAt(t) {
     const c = papply(ps, PARTS[i].c);
     bBuf[i * 4] = c[0]; bBuf[i * 4 + 1] = c[1]; bBuf[i * 4 + 2] = c[2]; bBuf[i * 4 + 3] = r;
     if (r > 0) visMask |= (1 << i);
-    if (P.cut > 0.001 && CUT_PARTS.includes(i) && t >= TL.slot[i] + TL.dur) cutMask |= (1 << i);
+    if (P.cut > 0.001 && CUT_PARTS.includes(i) && t >= TL.slot[i]) cutMask |= (1 << i);
   }
   st.cutMask = cutMask; st.visMask = visMask; st.hand = !!hand; st.press = hand ? pressAt(t) : 0;
   return st;
@@ -1624,7 +1726,7 @@ function cameraBasis(c) {
 }
 // autofocus: where the centre ray meets the toy's body (ray / ellipsoid), else the camera target
 function autofocus(cb, t) {
-  if (t < TL.slot[2] + TL.dur) return cb.focus;
+  if (t < TL.slot[2]) return cb.focus;
   const x = toyState(t).x; const C = [x + 4.2, 1.75, 0], Rr = [6.2, 1.55, 1.75];
   const o = [(cb.pos[0] - C[0]) / Rr[0], (cb.pos[1] - C[1]) / Rr[1], (cb.pos[2] - C[2]) / Rr[2]];
   const d = [cb.f[0] / Rr[0], cb.f[1] / Rr[1], cb.f[2] / Rr[2]];
@@ -1638,7 +1740,7 @@ function autofocus(cb, t) {
 let time = 0, playing = false, speed = 1, spp = 0, dirty = true, interacting = 0, lastKey = '', frameNo = 0;
 let ptAllowed = true;
 function markDirty() { dirty = true; }
-const SUN = v3.norm([0.3, 0.64, 0.73]);
+const SUN = v3.norm([-0.05, 0.64, 0.73]);
 
 function setUniforms(pr, camT, sceneT, rt) {
   const u = pr.u; gl.useProgram(pr.p);
@@ -1726,7 +1828,7 @@ function updateHUD() {
   $('#rSpeed').textContent = v.toFixed(2) + ' m/s';
   const s = st.wound / 100, L0 = P.bandL0 / 100, Gm = P.bandG * 1e6, A = P.bandA * 1e-6;
   const E = (lam) => Gm * A * L0 * (lam * lam / 2 + 1 / lam - 1.5);
-  const lam = time < TL.slot[16] + TL.dur ? 1 : (G.lam0 * L0 + s) / L0;
+  const lam = time < TL.slot[16] ? 1 : (G.lam0 * L0 + s) / L0;
   $('#rBand').textContent = ((lam > 1 ? E(lam) - E(G.lam0) : 0) * 1000).toFixed(1) + ' mJ';
   $('#rKE').textContent = ((r ? r.ke : 0) * 1000).toFixed(1) + ' mJ';
   $('#rLam').textContent = 'λ ' + lam.toFixed(2);
@@ -1837,11 +1939,11 @@ function buildControls() {
   $('#resetCam').addEventListener('click', () => { P.director = 1; $('#c_director').checked = true; camOverride = false; camSpec = null; markDirty(); });
 }
 let physTimer = 0;
-function schedulePhys() { clearTimeout(physTimer); physTimer = setTimeout(() => { const frac = time / TL.end; SIM = simulate(P); buildTimeline(); time = clamp(frac * TL.end, 0, TL.end); updateNote(); markDirty(); }, 120); }
+function schedulePhys() { clearTimeout(physTimer); physTimer = setTimeout(() => { const frac = time / TL.end; SIM = simulate(P); SIM.muMin = gripThreshold(P); buildTimeline(); time = clamp(frac * TL.end, 0, TL.end); updateNote(); markDirty(); }, 120); }
 function updateNote() {
   const n = $('#physNote'); if (!n) return;
   const mp = SIM.mp;
-  n.textContent = `Toy ${mp.m.toFixed(1)} g, ${(mp.printed * 100).toFixed(0)} % printed PLA by mass, centre of mass ${(mp.x - G.axR[0]).toFixed(2)} cm ahead of the rear axle (${(SIM.fr * 100).toFixed(0)} % on the drive wheels). Stored ${(SIM.Estored * 1000).toFixed(1)} mJ at λ ${SIM.lam.toFixed(2)}; launch needs tyre grip μ ≥ ${SIM.muNeeded.toFixed(2)} (including load transfer). Losses: rolling + air ${(SIM.Erol * 1000).toFixed(1)} mJ, front bores ${(SIM.Efront * 1000).toFixed(1)} mJ, rear bearings + freewheel ${(SIM.Ebear * 1000).toFixed(1)} mJ, tyre slip ${(SIM.Eslip * 1000).toFixed(1)} mJ. The band is fully wound after ${(SIM.dCap * 100).toFixed(1)} cm of pull${P.pull > SIM.dCap * 100 ? ' (the wheels skid for the rest)' : ''}; the ratchet then lets it creep ${(SIM.creep * 1000).toFixed(1)} mm forward onto the next tooth. Winding the band takes ${(SIM.ftPeak / (1 - P.hyst)).toFixed(2)} N of floor grip at the wheels, so the finger presses down about 1.5 N while it pulls.`;
+  n.textContent = `Toy ${mp.m.toFixed(1)} g, ${(mp.printed * 100).toFixed(0)} % printed PLA by mass, centre of mass ${(mp.x - G.axR[0]).toFixed(2)} cm ahead of the rear axle (${(SIM.fr * 100).toFixed(0)} % on the drive wheels). Stored ${(SIM.Estored * 1000).toFixed(1)} mJ at λ ${SIM.lam.toFixed(2)}; the launch spins the tyres below μ ≈ ${SIM.muMin.toFixed(2)}. Losses: rolling + air ${(SIM.Erol * 1000).toFixed(1)} mJ, front bores ${(SIM.Efront * 1000).toFixed(1)} mJ, rear bearings + freewheel ${(SIM.Ebear * 1000).toFixed(1)} mJ, tyre slip ${(SIM.Eslip * 1000).toFixed(1)} mJ. The band is fully wound after ${(SIM.dCap * 100).toFixed(1)} cm of pull${P.pull > SIM.dCap * 100 ? ' (the wheels skid for the rest)' : ''}; the ratchet then lets it creep ${(SIM.creep * 1000).toFixed(1)} mm forward onto the next tooth. Winding the band takes ${(SIM.ftPeak / (1 - P.hyst)).toFixed(2)} N of floor grip at the wheels, so the finger presses down about 1.5 N while it pulls.`;
 }
 
 /* ---------------- input ---------------- */
@@ -1902,7 +2004,7 @@ window.SIM_API = {
   ready: false,
   info: () => ({ time, end: TL.end, TL, dist: SIM.dist, runTime: SIM.time, peakV: SIM.peakV, Estored: SIM.Estored, state: toyState(time), P: { ...P } }),
   setTime: (t) => { time = clamp(t, 0, TL.end); playing = false; setPlay(); markDirty(); },
-  setParam: (k, v) => { P[k] = v; if (PHYS_KEYS.includes(k)) { SIM = simulate(P); buildTimeline(); } markDirty(); },
+  setParam: (k, v) => { P[k] = v; if (PHYS_KEYS.includes(k)) { SIM = simulate(P); SIM.muMin = gripThreshold(P); buildTimeline(); } markDirty(); },
   setCamera: (o) => { P.director = 0; camOverride = true; const track = o.target === 'toy' || !o.target; camSpec = { track, dx: o.dx || 0, dy: o.dy || 0, dz: o.dz || 0, target: track ? null : o.target, az: (o.az ?? 40) * DEG, el: (o.el ?? 15) * DEG, dist: o.dist ?? 30 }; if (o.fov) P.fov = o.fov; markDirty(); },
   director: () => { camSpec = null; P.director = 1; camOverride = false; markDirty(); },
   // render a converged still synchronously at a fixed size; returns PNG data URL
@@ -1930,7 +2032,7 @@ window.SIM_API = {
 };
 
 /* ---------------- boot ---------------- */
-SIM = simulate(P); buildTimeline();
+SIM = simulate(P); SIM.muMin = gripThreshold(P); buildTimeline();
 buildControls(); updateNote(); setPlay();
 if (/capture/.test(location.search)) document.body.classList.add('capture');
 requestAnimationFrame(() => {

@@ -890,9 +890,30 @@ Mat getMat(float id, int part, vec3 p, inout vec3 n, float t){
   else if(id==M_STRING){ m.alb=vec3(0.82,0.82,0.8); m.rough=0.85; }
   else if(id==M_EYE){ m.alb=vec3(0.006); m.rough=0.06; m.coat=1.; m.coatR=0.03; }
   else if(id==M_EGG){ m.alb=vec3(0.92,0.36,0.03); m.rough=0.22; m.sss=0.4; }
-  else if(id==M_SKIN){ m.alb=vec3(0.62,0.37,0.27); m.rough=0.48; m.sss=1.0;
-    vec3 q=(uM[21]*vec4(p,1.)).xyz; float cr=vnoise(q.xy*vec2(6.,30.)); m.alb*=0.92+0.12*cr; }
-  else if(id==M_NAIL){ m.alb=vec3(0.78,0.58,0.52); m.rough=0.18; m.coat=0.6; m.coatR=0.12; }
+  else if(id==M_SKIN){
+    vec3 q=(uM[21]*vec4(p,1.)).xyz;
+    vec3 u1=normalize(vec3(-0.30,0.95,0.)), u2=normalize(vec3(-0.55,0.83,0.));
+    vec3 Dj=vec3(0.,0.70,0.)+u1*2.0, Pj=Dj+u2*2.4;
+    // knuckle creases on the back of the finger, redder fingertip, blotchy capillary tone
+    float c1=exp(-pow(dot(q-Dj,normalize(u1+u2))/0.06,2.)), c2=exp(-pow(dot(q-Pj,u2)/0.07,2.));
+    float wr=0.5+0.5*sin(dot(q,vec3(9.,13.,40.)));
+    float crease=(c1+c2)*(0.55+0.45*wr);
+    float tip=smoothstep(1.6,0.3,q.y);
+    float blot=fbm(q.xy*3.1+q.z*2.);
+    m.alb=mix(vec3(0.60,0.36,0.26),vec3(0.66,0.30,0.22),0.35*tip+0.25*blot);
+    m.alb*=1.-0.28*crease;
+    m.rough=0.42+0.18*crease+0.1*fbm(q.xy*40.); m.sss=1.0; m.spec=0.6;
+    n=normalize(n+vec3(fbm(q.yz*55.)-0.5,fbm(q.xz*55.)-0.5,fbm(q.xy*55.)-0.5)*0.06);
+  }
+  else if(id==M_NAIL){
+    vec3 q=(uM[21]*vec4(p,1.)).xyz; vec3 u1=normalize(vec3(-0.30,0.95,0.));
+    float a=dot(q-vec3(0.,0.70,0.),u1); // 0 at fingertip centre, ~1.5 at nail root
+    m.alb=vec3(0.76,0.52,0.46);
+    m.alb=mix(m.alb,vec3(0.86,0.80,0.74),smoothstep(-0.05,-0.25,a));   // free edge
+    m.alb=mix(m.alb,vec3(0.86,0.74,0.70),smoothstep(1.2,1.42,a));      // lunula
+    m.rough=0.16; m.coat=0.7; m.coatR=0.1;
+    n=normalize(n+vec3(0.,0.,sin(q.z*90.)*0.015));
+  }
   else if(id==M_CASE){ m.alb=vec3(0.92,0.62,0.02); m.rough=0.3; }
   if(pla && part>=0){
     vec3 axis=(part==5||part==6||(part>=9&&part<=12)||part==15||part==17)?vec3(0.,0.,1.):vec3(0.,1.,0.);
@@ -983,7 +1004,7 @@ Hit traceScene(vec3 ro, vec3 rd, int steps){
   vec3 s=traceSDF(ro,rd,rr.x,steps);
   if(s.x>0.){ h.t=s.x; h.mat=s.y; h.part=int(s.z); h.sdf=true; }
   h.p=ro+rd*h.t;
-  if(h.sdf){ float e=max(0.0012,h.t*uPix*0.5); h.n=calcNormal(h.p,e); }
+  if(h.sdf){ float e=max(0.0012,h.t*uPix*0.5); if(h.mat==M_SKIN) e=max(e,0.05); h.n=calcNormal(h.p,e); }
   return h;
 }
 Mat hitMat(inout Hit h){ if(h.sdf) return getMat(h.mat,h.part,h.p,h.n,h.t); return roomMat(h.p,h.mat,h.n,h.t); }

@@ -98,12 +98,14 @@ function ellPts(cx, cy, rx, ry, rotDeg = 0, a0 = 0, a1 = Math.PI * 2, n = 48) {
   for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; const x = rx * Math.cos(a), y = ry * Math.sin(a); pts.push([cx + x * Math.cos(r) - y * Math.sin(r), cy + x * Math.sin(r) + y * Math.cos(r)]); }
   return pts;
 }
-// gear / ratchet outline
+// gear / ratchet outline. saw=true: steep face trails the tip (locks anticlockwise on screen);
+// saw='rev': steep face leads the tip (locks clockwise on screen)
 function gearPts(cx, cy, r0, r1, n, saw) {
   const pts = [];
   for (let i = 0; i < n; i++) {
     const a = i / n * Math.PI * 2, b = (i + 0.5) / n * Math.PI * 2, c = (i + 1) / n * Math.PI * 2;
-    if (saw) { pts.push([cx + r1 * Math.cos(a), cy + r1 * Math.sin(a)]); pts.push([cx + r0 * Math.cos(c - 0.02), cy + r0 * Math.sin(c - 0.02)]); }
+    if (saw === 'rev') { pts.push([cx + r1 * Math.cos(a), cy + r1 * Math.sin(a)]); pts.push([cx + r0 * Math.cos(a + 0.02), cy + r0 * Math.sin(a + 0.02)]); }
+    else if (saw) { pts.push([cx + r1 * Math.cos(a), cy + r1 * Math.sin(a)]); pts.push([cx + r0 * Math.cos(c - 0.02), cy + r0 * Math.sin(c - 0.02)]); }
     else { pts.push([cx + r0 * Math.cos(a), cy + r0 * Math.sin(a)]); pts.push([cx + r1 * Math.cos(a + 0.12), cy + r1 * Math.sin(a + 0.12)]); pts.push([cx + r1 * Math.cos(b - 0.12), cy + r1 * Math.sin(b - 0.12)]); pts.push([cx + r0 * Math.cos(b), cy + r0 * Math.sin(b)]); }
   }
   return pts;
@@ -149,7 +151,7 @@ function TITLE_BLOCK(x, y, w, h, f) {
   rows.forEach(([k, v], i) => { TXT(x + 12, y + 82 + i * 19, k + ':', { size: 13.5, color: GREY }); TXT(x + 120, y + 82 + i * 19, v, { size: 14.5 }); });
   L(x, y + h - 42, x + w, y + h - 42, { strokeWidth: 1, roughness: 0.4 });
   const sy = y + h - 15;
-  TXT(x + 12, sy, 'Drawn by: _____________', { size: 14.5 });
-  TXT(x + 196, sy, 'Signature: ______________', { size: 14.5 });
-  TXT(x + w - 12, sy, 'Date: _________', { size: 14.5, anchor: 'end' });
+  TXT(x + 12, sy, 'Drawn by: ________', { size: 14.5 });
+  TXT(x + 200, sy, 'Signature: __________', { size: 14.5 });
+  TXT(x + w - 12, sy, 'Date: ________', { size: 14.5, anchor: 'end' });
 }

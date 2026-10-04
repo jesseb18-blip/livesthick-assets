@@ -186,7 +186,7 @@ const PHYS_KEYS = ['ballast', 'pull', 'bandG', 'bandA', 'bandL0', 'spoolR', 'mu'
 const G = {
   R: 1.0, Rf: 0.6, axR: [2.4, 1.0, 0], axF: [7.8, 0.6, 0], rearW: 0.88, frontW: 0.55,
   neck: [9.9, 2.25, 0], anchorX: 9.1, lam0: 1.1, noseX: 13.41,
-  flip: [6.4, 1.95, 1.82], tail: [-1.75, 2.0, 0], pawl: [3.16, 1.66, 0.45], pawlTip: [-0.58, -0.19], pawlArm: 0.354,
+  flip: [6.4, 1.95, 1.82], tail: [-1.75, 2.0, 0], pawl: [3.16, 1.66, 0.45], pawlTip: [-0.58, -0.19], pawlArm: 0.354, headLever: 0.62, nodDeg: 15,
   ratN: 12, ratR0: 0.38, ratH: 0.12, bearingR: 0.1,
 };
 G.bandLmax = G.anchorX - G.axR[0] - 0.5;
@@ -348,7 +348,8 @@ function buildTimeline() {
   t.pull0 = t.finIn1 + 0.2; t.pull1 = t.pull0 + Math.max(0.7, P.pull / 22);
   t.finUp0 = t.pull1 + 0.2; t.finUp1 = t.finUp0 + 0.45; t.creep1 = t.finUp0 + 0.08;
   t.finHead1 = t.finUp1 + 0.75;
-  t.tap0 = t.finHead1 + 0.6; t.tap1 = t.tap0 + 0.14; t.rel = t.tap0 + 0.1;
+  t.tap0 = t.finHead1 + 0.6; t.tap1 = t.tap0 + 0.14;
+  t.rel = releaseTime(t.tap0, t.tap1);
   t.finOut1 = t.tap1 + 0.6;
   t.runEnd = t.rel + SIM.time;
   t.end = t.runEnd + 2.5;
@@ -357,6 +358,15 @@ function buildTimeline() {
     ['Kit layout', 0], ['Assembly', t.asm0], ['Charge: pull back', t.finIn0], ['Armed', t.pull1], ['Trigger: head nod', t.tap0 - 0.05], ['Run', t.rel], ['Stopped', t.runEnd],
   ];
   TL = t;
+}
+// first instant of the nod at which the pawl tip clears the 12-tooth ratchet crests by 0.1 mm
+function releaseTime(t0, t1) {
+  const seated = pawlAngleFor(G.ratR0), clear = G.ratR0 + G.ratH + 0.01;
+  for (let k = 0; k <= 200; k++) {
+    const u = minJerk(k / 200), rod = G.headLever * Math.sin(G.nodDeg * DEG * u);
+    if (pawlTipRadius(seated - rod / G.pawlArm) >= clear) return t0 + (t1 - t0) * k / 200;
+  }
+  return Infinity; // the trigger cannot release this design
 }
 function phaseAt(t) { let name = TL.phases[0][0]; for (const [n, t0] of TL.phases) if (t >= t0) name = n; return name; }
 
@@ -384,10 +394,10 @@ function toyState(t) {
   st.bandLen = (t < TL.slot[16]) ? L0 : G.lam0 * L0 + s;
   // head nod (bistable trigger) pulls the rod forward, which swings the pawl tip out of the teeth
   const nodU = t < TL.tap0 ? 0 : minJerk((t - TL.tap0) / (TL.tap1 - TL.tap0));
-  st.nod = -15 * DEG * nodU;
-  st.rod = 0.116 * nodU;
-  const phiSeat = t >= TL.tap0 ? -(rolledCm - creepCm) / R : phi;
-  const seated = pawlAngleFor(ratchetR(phiSeat));
+  st.nod = -G.nodDeg * DEG * nodU;
+  st.rod = G.headLever * Math.sin(G.nodDeg * DEG * nodU);
+  const armed = t >= TL.creep1;
+  const seated = armed ? pawlAngleFor(G.ratR0) : pawlAngleFor(ratchetR(phi));
   st.pawl = seated - (st.rod / G.pawlArm);
   st.pawlR = pawlTipRadius(st.pawl);
   let yaw = 0, z = 0, pitch = 0;
@@ -678,7 +688,7 @@ vec2 pHead(vec3 q,bool cut){
   float h=sdEllipsoid(q-vec3(1.0,0.75,0.),vec3(1.5,1.32,1.25));
   float nb=length(q)-0.95;
   float d=smin(h,nb,0.45);
-  if(cut){ d=max(d,-sdEllipsoid(q-vec3(1.0,0.75,0.),vec3(1.36,1.18,1.11))); d=max(d,-(length(q)-0.82)); d=min(d,sdCapsule(q,vec3(0.,0.,0.45),vec3(0.,0.45,0.45),0.055)); }
+  if(cut){ d=max(d,-sdEllipsoid(q-vec3(1.0,0.75,0.),vec3(1.36,1.18,1.11))); d=max(d,-(length(q)-0.82)); d=min(d,sdCapsule(q,vec3(0.,0.,0.45),vec3(0.,${G.headLever.toFixed(3)},0.45),0.055)); }
   vec2 r=vec2(d,M_HEAD);
   vec3 bq=q; bq.z*=1.3;
   float bk=sdRoundCone(bq,vec3(2.2,0.63,0.),vec3(3.45,0.36,0.),0.36,0.05)*0.76;
@@ -738,12 +748,12 @@ vec2 pWheelF(vec3 q,bool cut){
   if(o<res.x) res=vec2(o,M_RUBBER);
   return res;
 }
-// 2 mm steel rear axle carrying two 12-tooth ratchet rings (inside the wheel hubs)
+// 2 mm steel rear axle carrying two 8-tooth freewheel ratchet rings (inside the wheel hubs)
 vec2 pAxleR(vec3 q,bool cut){
   vec2 res=vec2(sdCylZ(q,0.09,1.28)-0.01,M_STEEL);
   vec3 rq=q; rq.z=abs(rq.z)-0.78;
   float r=length(rq.xy); float a=atan(rq.y,rq.x); float f=fract(a*8./(2.*PI));
-  float ring=max((r-(0.24+0.05*(1.-f)))*0.6,abs(rq.z)-0.07);
+  float ring=max((r-(0.27+0.02*(1.-f)))*0.6,abs(rq.z)-0.07);
   ring=max(ring,-(r-0.104));
   if(ring<res.x) res=vec2(ring,M_GRAY);
   return res;
@@ -783,7 +793,7 @@ vec2 pPawl(vec3 q,bool cut){
   return vec2(d,M_GRAY);
 }
 vec2 pRod(vec3 q,bool cut){
-  vec3 A=PAWLP+vec3(0.1,0.34,0.), B=NECK+vec3(0.,0.45,AXR.z+0.45-NECK.z);
+  vec3 A=PAWLP+vec3(0.1,0.34,0.), B=NECK+vec3(0.,${G.headLever.toFixed(3)},0.);
   A.z=0.45; B.z=0.45;
   float d=sdCapsule(q,A+vec3(0.12,0.,0.),B,0.045);
   vec3 h=q-A; float hook=max(length(vec2(length(h.xy)-0.085,h.z))-0.03,-h.x-0.02);

@@ -80,3 +80,21 @@ The order matters. The wheels drop into their wells before the axle slides throu
 ## Egg size
 
 All parts are sized to come out of the course's Kinder Maxi capsule (about 75 mm × 100 mm, per the supplied `Egg_*_Thickened_F25` CAD). The assembled toy is about 163 mm from tail tip to beak, so it is larger than the egg, as the rules require.
+
+## Review history
+
+Each round, a fresh critic agent rendered its own shots headlessly and scored realism and physics together. Below 4–7 counts as usable CG, and 8 or more means it passes as real footage.
+
+| Round | Score | Main findings acted on |
+| --- | --- | --- |
+| 1 | 5.5 / 10 | Lens maths and focus, tracking-camera motion blur, wheels outside the body, unmodelled freewheel, centre of mass, flat lighting, waxy hand |
+| 2 | 4.8 / 10 | Rear axle position differed between shader and physics, coast friction placed in the wrong parts, levitating assembly, blown-out sun patch, decal tape measure |
+| 3 | 5.0 / 10 | The trigger as drawn could not clear the pawl, plus a seating bug that hid it. Fixed after the review (6.2 mm head lever, release timed to actual clearance); this fix was not re-scored |
+
+The loop stopped after the third round without reaching 8. Open items from the last review:
+
+- **Physics margin.** The 2.79 m run leaves out freewheel-pawl sliding friction and bearing grease drag, and assumes front bores at μ 0.2. With realistic values the critic estimated 2.0–2.2 m. Front MR52 bearings or a stronger band (about 3.2 mm²) would win the margin back.
+- **Keel and parts.** The belly keel renders solid unless the cutaway is on. The ballast block and the keel bearings are not kit parts.
+- **Wheels.** About 7 mm of each rear wheel shows from the side; side skirts would hide it.
+- **Preview vs. frozen.** The realtime preview is brighter than the path tracer.
+- **Realism gaps.** The hand still reads as a mannequin, and the prints look smooth rather than FDM. The room is sparse and the floor reads as laminate.

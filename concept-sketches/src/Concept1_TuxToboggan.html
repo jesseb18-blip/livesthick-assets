@@ -224,12 +224,13 @@ PL([[m.X(31.6), m.Y(16.6)], [m.X(25.43), m.Y(13.74)]], { stroke: MECH, strokeWid
 PL([[m.X(31.6), m.Y(16.6)], [m.X(32.6), m.Y(20)]], { stroke: MECH, strokeWidth: 2.2 });
 CURVE([[m.X(24.5), m.Y(20.5)], [m.X(26.6), m.Y(18.2)], [m.X(28.4), m.Y(15.6)]], { stroke: MECH, strokeWidth: 1.4 });
 CIRC(m.X(31.6), m.Y(16.6), 7, { stroke: MECH, fill: MECH, fillStyle: 'solid' });
-L(m.X(32.6), m.Y(20), m.X(99), m.Y(28.7), mo({ strokeWidth: 1.8 }));
+L(m.X(32.6), m.Y(20), m.X(99), m.Y(28.7), { stroke: '#444', strokeWidth: 1.1, strokeLineDash: [5, 3], roughness: 0.4 });
 L(m.X(99), m.Y(22.5), m.X(99), m.Y(28.7), { stroke: MECH, strokeWidth: 2.4 });
 CIRC(m.X(99), m.Y(22.5), 7, { stroke: MECH, fill: MECH, fillStyle: 'solid' });
-BAND(m.X(55.8), m.Y(11.2), m.X(91), m.Y(11.2));
+BAND(m.X(56.6), m.Y(12.2), m.X(91), m.Y(12.2)); BAND(m.X(56.6), m.Y(10.2), m.X(91), m.Y(10.2));
+L(m.X(30.5), m.Y(10.5), m.X(55.6), m.Y(10.5), { stroke: '#555', strokeWidth: 1.1, roughness: 0.3 });
 L(m.X(24), m.Y(11.2), m.X(55.2), m.Y(11.2), { stroke: '#555', strokeWidth: 1.1, roughness: 0.3 });
-CIRC(m.X(55.6), m.Y(11.2), 5, { fill: '#555', fillStyle: 'solid', stroke: '#555' });
+CIRC(m.X(55.8), m.Y(11.2), 7, { fill: '#fdfcf8', fillStyle: 'solid', stroke: '#333', strokeWidth: 1.2 });
 L(m.X(91), m.Y(9.5), m.X(91), m.Y(14), { stroke: INK, strokeWidth: 3 });
 L(m.X(56.6), m.Y(8.5), m.X(56.6), m.Y(10.4), { stroke: INK, strokeWidth: 2.4 });
 L(m.X(56.6), m.Y(12), m.X(56.6), m.Y(13.6), { stroke: INK, strokeWidth: 2.4 });
@@ -244,7 +245,7 @@ CALL(m.X(24), m.Y(14.6), 48, 158, 'RATCHET (12 teeth) + line on a 2 mm steel\nD-
 CALL(m.X(-3), m.Y(13), 48, 238, 'steel ballast\n5 g in the\nrear keel', { start: true, size: 13.5 });
 // top row
 CALL(m.X(44), m.Y(32.5), 455, 95, 'BACK SHELL – black PLA, 2 halves, snap-fit', { start: true });
-CALL(m.X(60), m.Y(24.8), 520, 145, 'TRIGGER ROD (head lever pulls it)', { start: true });
+CALL(m.X(60), m.Y(24.8), 520, 140, 'TRIGGER CORD – pull-only line,\nso the pawl clicks freely', { start: true });
 CALL(m.X(75), m.Y(19.2), 590, 205, 'FLIPPER (press-fit)', { start: true });
 CALL(m.X(112), m.Y(42.6), 800, 95, 'HEAD = TRIGGER (beak clips on)\nnods 15° on trunnion pins', { start: true });
 // bottom row
@@ -252,7 +253,7 @@ CALL(m.X(-22), m.Y(3.8), 48, 458, 'feet\nclip', { start: true, size: 13.5 });
 CALL(m.X(24), m.Y(0.6), 150, 478, 'Ø20 DRIVE WHEELS in keel wells,\nO-ring tyres, freewheel hubs', { start: true, size: 13.5 });
 CALL(m.X(30), m.Y(2.3), 380, 478, 'BELLY KEEL – white PLA, 2 halves;\nlowest point 2 mm off the floor', { start: true, size: 13.5 });
 CALL(m.X(78), m.Y(0.6), 620, 478, 'Ø12 front rollers on MR52\nbearings, 2 mm steel axle', { start: true, size: 13.5 });
-CALL(m.X(86), m.Y(11.6), 930, 470, 'RUBBER BAND #10, chin\npost; line to the shaft.\nKnot parks at the fork\n(λ 1.1), jams in the\neyelet (λ 1.9, full)', { start: true, size: 13.5 });
+CALL(m.X(86), m.Y(12.2), 930, 466, 'TWO #10 BANDS pull a\nsheave; the line runs shaft\n→ sheave → eyelet post\n(2:1). Sheave parks at the\nfork (λ 1.1), stops at the\neyelet (λ 1.9, full)', { start: true, size: 13 });
 
 // dimensions
 DIM(m.X(-29.5), m.Y(0), m.X(134.1), m.Y(0), '163 overall', 128);
@@ -282,7 +283,21 @@ L(t.X(24), Z(12), t.X(24), Z(-12), dashed({ stroke: INK }));
 L(t.X(78), Z(8), t.X(78), Z(-8), dashed({ stroke: INK }));
 DIM(t.X(150), Z(17.5), t.X(150), Z(-17.5), '35 body', -18);
 DIM(t.X(64), Z(24.6), t.X(64), Z(-24.6), '≈49 over flippers', 0, { halo: 5 });
-TXT(t.X(160), Z(9), 'wheels (dashed) sit inside\nthe body: only the tyre\nbottoms touch the floor', { size: 13.5, color: GREY });
+{ // section through the rear axle (0.6 : 1)
+  const cx = 935, fy = 766, k = 2.4, Y = (y) => fy - y * k, Zs = (z) => cx + z * k;
+  TXT(905, 690, 'rear-axle section', { size: 12, color: GREY });
+  POLY(ellPts(cx, Y(17.5), 17.5 * k, 15.5 * k, 0, Math.PI, 2 * Math.PI, 24), { fill: C.black, fillStyle: 'hachure', hachureGap: 3, strokeWidth: 1.4 });
+  POLY(ellPts(cx, Y(17.5), 17.5 * k, 15.5 * k, 0, 0, Math.PI, 24), { fill: '#fff', fillStyle: 'solid', strokeWidth: 1.4 });
+  for (const sg of [1, -1]) {
+    RECT(Zs(sg * 10.6) - 2.1 * k, Y(20), 4.2 * k, 20 * k, dashed({ stroke: C.orange, strokeWidth: 1.2 }));
+    L(Zs(sg * 10.6) - 2.1 * k, Y(0.3), Zs(sg * 10.6) + 2.1 * k, Y(0.3), { strokeWidth: 3, roughness: 0.3 });
+    POLY([[Zs(sg * 13.6), Y(8)], [Zs(sg * 14.6), Y(8)], [Zs(sg * 14.6), Y(3)], [Zs(sg * 13.6), Y(3)]], { fill: '#fff', fillStyle: 'solid', strokeWidth: 1.2 });
+    RECT(Zs(sg * 5) - 3, Y(12), 6, 4 * k, { stroke: GREY, strokeWidth: 0.8, fill: '#bbb', fillStyle: 'solid' });
+  }
+  L(Zs(-14), Y(10), Zs(14), Y(10), { stroke: C.steel, strokeWidth: 2.2 });
+  L(cx - 60, fy, cx + 60, fy, { strokeWidth: 1.2 });
+  TXT(1004, 706, 'keel skirts hide\nall but the bottom\n3 mm of tyre; front\nrollers sit in a\nchin boss', { size: 12, color: GREY });
+}
 
 /* ---------------- A: ENERGY ---------------- */
 BOX(1130, 40, 540, 405, 'A   ENERGY – PULL-BACK CHARGE');
@@ -298,12 +313,13 @@ CIRC(pv[0], pv[1], 9, { stroke: MECH, fill: MECH, fillStyle: 'solid' });
 RECT(ax + 4, ay - 92, 26, 8, { stroke: GREY, strokeWidth: 1, fill: '#ccc', fillStyle: 'hachure', hachureGap: 3 });
 CURVE([[ax + 18, ay - 84], [ax + 30, ay - 64], [ax + 38, ay - 46]], { stroke: INK, strokeWidth: 2.2 });
 L(ax, ly, ax + 175, ly, { stroke: '#555', strokeWidth: 1.2 });
-CIRC(ax + 175, ly, 8, { fill: '#555', fillStyle: 'solid', stroke: '#555' });
-BAND(ax + 179, ly, ax + 330, ly);
+CIRC(ax + 179, ly + 5, 11, { fill: '#fdfcf8', fillStyle: 'solid', stroke: '#333', strokeWidth: 1.4 });
+L(ax + 56, ly + 10, ax + 179, ly + 10, { stroke: '#555', strokeWidth: 1.2 });
+BAND(ax + 185, ly + 1, ax + 330, ly + 1); BAND(ax + 185, ly + 9, ax + 330, ly + 9);
 L(ax + 336, ly - 22, ax + 336, ly + 22, { strokeWidth: 3.5 });
 TXT(ax + 340, ly + 42, 'chin\npost', { size: 13, anchor: 'end' });
 L(ax + 56, ly - 18, ax + 56, ly - 5, { strokeWidth: 3 }); L(ax + 56, ly + 5, ax + 56, ly + 18, { strokeWidth: 3 });
-CALL(ax + 56, ly + 12, ax + 112, ay + 36, 'stop eyelet', { start: true, size: 12, lc: GREY, color: GREY });
+CALL(ax + 56, ly + 14, ax + 22, ay + 62, 'eyelet post: line anchor\n+ full-charge stop', { start: true, size: 11.5, lc: GREY, color: GREY, halo: 4 });
 ARC_ARROW(ax, ay, 120, -0.6, -2.4, { stroke: RED, strokeWidth: 2.2 });
 CIRC(1630, 312, 40, { stroke: C.orange, strokeWidth: 1.6 });
 POLY(gearPts(1630, 312, 9, 13, 8, 'rev'), { stroke: MECH, fill: '#cbb8ec', fillStyle: 'hachure', hachureGap: 3, strokeWidth: 1.1 });
@@ -313,14 +329,14 @@ TXT(1604, 310, 'freewheel hub: ring on the\naxle + flexure pawl in the wheel', {
 TXT(1142, 92, '① pull back:\nwheel turns\nbackwards', { size: 14, color: RED });
 ARROW(ax + 165, ly - 12, ax + 105, ly - 12, { stroke: RED, strokeWidth: 1.8, head: 9 });
 TXT(ax + 108, ly - 20, 'line winds on', { size: 13, color: RED });
-ARROW(ax + 300, ly + 18, ax + 200, ly + 18, { stroke: RED, strokeWidth: 1.8 });
-TXT(ax + 250, ly + 38, '② band stretches\nλ 1.1 → 1.91', { size: 13.5, color: RED, anchor: 'middle' });
+ARROW(ax + 300, ly + 22, ax + 220, ly + 22, { stroke: RED, strokeWidth: 1.8 });
+TXT(ax + 240, ly + 40, '② 2 bands stretch\nλ 1.1 → 1.91', { size: 13.5, color: RED, anchor: 'middle' });
 CALL(tip[0], tip[1], ax + 115, ay - 125, '③ pawl clicks over the teeth; its\nflexure spring keeps it seated', { lc: MECH, color: MECH, size: 13 });
-TXT(1145, 352, 'Stored E = G·A·L₀(λ²/2 + 1/λ − 3/2) ≈ 31 mJ  (#10 band: G 0.45 MPa, A 2.56 mm², L₀ 32)', { size: 12.3 });
-TXT(1145, 372, 'Band travel (1.91 − 1.1) × 32 = 26 mm of line on the bare Ø2 axle (r 1.2) = 22 cm of pull', { size: 12.3 });
-TXT(1145, 392, 'Peak drive 1.89 N × 0.85 (band hysteresis) × 1.2/10 = 0.19 N → no wheelspin above μ 0.64', { size: 12.2 });
-TXT(1145, 412, 'Project time-step sim (Crr 0.015, 6 MR52): run 4.1 m, top 1.1 m/s; rolling + air 24 mJ,', { size: 12.2 });
-TXT(1145, 432, 'bearings 2 mJ. Dusty floor (Crr 0.025): 2.6 m. Tyres slip? Pull 18 cm → μ 0.58, 3.1 m', { size: 12.2 });
+TXT(1145, 352, '2 × #10 bands: E = 2·G·A·L₀(λ²/2 + 1/λ − 3/2) ≈ 60 mJ (G 0.45 MPa, A 2.56 mm², L₀ 32)', { size: 12 });
+TXT(1145, 372, '2:1 sheave: 26 mm band travel = 52 mm of line on the bare Ø2 shaft (r 1.2) = 43 cm pull', { size: 12 });
+TXT(1145, 392, 'Line pull 3.78 N ÷ 2 = 1.89 N → drive 1.89 × 0.85 (hyst.) × 1.2/10 = 0.19 N; rear load 0.26 N', { size: 12 });
+TXT(1145, 412, '+ 0.05 transfer (CG 17 mm up) → μ ≥ 0.62 (sim 0.63). Sim (Crr 0.015): run 7.7 m, 1.6 m/s', { size: 12 });
+TXT(1145, 432, 'Dusty floor (Crr 0.025): 4.9 m; + only a 35 cm pull: 3.6 m; + 25 % band hysteresis: 4.4 m', { size: 12 });
 
 /* ---------------- B: TRIGGER ---------------- */
 BOX(1130, 455, 540, 265, 'B   TRIGGER – TAP THE HEAD');
@@ -341,7 +357,7 @@ function trig(ox, oy, fired) {
   CURVE([[rx + 10, ry - 56], [rx + 14, ry - 46], mid], { stroke: INK, strokeWidth: 1.8 });
   const nx = ox + 180, ny = oy + 120;
   const lever = [nx + 26 * Math.sin(-nod), ny - 26 * Math.cos(nod)];
-  L(arm[0], arm[1], lever[0], lever[1], { stroke: MECH, strokeWidth: 1.8 });
+  L(arm[0], arm[1], lever[0], lever[1], { stroke: '#444', strokeWidth: 1.2, roughness: 0.5 });
   CIRC(nx, ny, 34, { fill: C.black, fillStyle: 'hachure', hachureGap: 3 });
   // detent: fixed flexure finger + two notches on the neck ball (UP, and 15° away for NOD)
   for (const a of [135, 120]) { const aa = (a - nod * 180 / Math.PI) * Math.PI / 180; const px = nx + 17 * Math.cos(aa), py = ny + 17 * Math.sin(aa);
@@ -357,9 +373,9 @@ function trig(ox, oy, fired) {
   L(lever[0], lever[1], nx, ny, { stroke: MECH, strokeWidth: 2.8 });
   CIRC(nx, ny, 6, { stroke: MECH, fill: MECH, fillStyle: 'solid' });
   if (fired) {
-    ARC_ARROW(nx, ny, 60, -1.2, -0.68, { stroke: RED, strokeWidth: 2.2, head: 9 });
-    ARROW(nx - 34, ny - 74, nx + 2, ny - 40, { stroke: RED, strokeWidth: 2.4, head: 12 });
-    TXT(nx - 38, ny - 76, 'tap', { size: 15, color: RED, anchor: 'end' });
+    const bt = [b0[0] + 20 * fwd[0], b0[1] + 20 * fwd[1]];
+    ARROW(bt[0] + 2, bt[1] - 44, bt[0] + 1, bt[1] - 7, { stroke: RED, strokeWidth: 2.4, head: 11 });
+    TXT(bt[0] - 4, bt[1] - 48, 'tap the beak tip', { size: 13, color: RED, anchor: 'end' });
     ARROW(arm[0] + 44, arm[1] - 2, arm[0] + 74, arm[1] - 5, { stroke: RED, strokeWidth: 1.6, head: 8 });
     ARC_ARROW(rx, ry, 36, -0.5, 0.45, { stroke: C.green, strokeWidth: 2 });
     TXT(rx + 46, ry + 12, 'free → GO', { size: 13.5, color: C.green });
@@ -373,8 +389,8 @@ function trig(ox, oy, fired) {
 trig(1145, 455, false);
 trig(1405, 455, true);
 L(1400, 500, 1400, 680, { stroke: GREY, strokeWidth: 0.8, strokeLineDash: [4, 4] });
-TXT(1400, 699, '6.2 mm lever × sin 15° = 1.6 mm rod pull → pawl turns 28° → tip lifts 2.3 mm (tooth 1.2) ✓', { size: 12, anchor: 'middle' });
-TXT(1400, 714, 'Release: 0.57 N tooth load → 3.4 N·mm on the pawl → rod 1.1 N → 7 N·mm → tap ≈ 0.6 N', { size: 12, anchor: 'middle' });
+TXT(1400, 699, 'Cord pull 1.6 mm → pawl 28°, tip up 2.3 mm (tooth 1.2) · release 3.4 N·mm → cord 1.1 N', { size: 11.8, anchor: 'middle' });
+TXT(1400, 714, 'Tap the beak tip ≈ 0.2 N (7 N·mm ÷ 35): 11 N·mm nose-down < 14 righting → won’t tip', { size: 11.8, anchor: 'middle' });
 
 /* ---------------- C: EGG (true scale, side + end views) ---------------- */
 BOX(1130, 728, 540, 165, 'C   PACKS INTO THE EGG');
@@ -405,6 +421,7 @@ BOX(1130, 728, 540, 165, 'C   PACKS INTO THE EGG');
   for (const [x, y] of [[24, 4], [-24, 4]]) CIRC(rxv + x, sy - y, 2.4, { fill: C.steel, fillStyle: 'solid' });
   for (const y of [8, -10]) RECT(rxv - 26.5, sy - y - 5.5, 3, 11, { fill: '#111', fillStyle: 'solid', strokeWidth: 0.6 });
   RECT(rxv + 22, sy + 10, 8, 5, { fill: C.orange, fillStyle: 'solid', strokeWidth: 0.6 });
+  TXT(rxv, sy - 16, 'A', { font: 'PH', size: 12, anchor: 'middle', color: '#fff' }); TXT(rxv, sy + 18, 'B', { font: 'PH', size: 12, anchor: 'middle' });
   TXT(sx, 886, 'side', { size: 10.5, anchor: 'middle', color: GREY }); TXT(rxv, 886, 'end, at equator', { size: 10.5, anchor: 'middle', color: GREY });
 }
 TXT(1318, 784, 'Scale 1 : 4. The 4 shell quarters pair into two closed', { size: 12 });
@@ -413,7 +430,7 @@ TXT(1318, 814, 'A = back-shell R + keel F, holding the head; B = back-', { size:
 TXT(1318, 829, 'shell F + keel R, holding wheels, rollers, ratchet, pawl.', { size: 12 });
 TXT(1318, 844, 'Rod (66 mm), axles, flippers, tail, feet, beak: side gaps.', { size: 12 });
 TXT(1318, 859, 'Tightest: A’s wide end, 26.0 of 27.7 mm (1.7 mm clear).', { size: 12 });
-TXT(1318, 882, 'Assembled 163 × 46 × 43 mm → bigger than the egg ✓', { size: 13, color: C.green });
+TXT(1318, 882, 'Assembled 163 × 49 × 43 mm → bigger than the egg ✓', { size: 13, color: C.green });
 
 /* ---------------- bottom boxes ---------------- */
 BOX(40, 775, 268, 295, 'BIOMIMICRY');
@@ -432,22 +449,22 @@ TXT(dx + 110, dy - 34, '…long glide →', { size: 13, color: C.green });
 TXT(52, 945, 'Tobogganing penguins (emperor,\nAdélie) give a few kicks, then\nglide far on their bellies. Copied:\na 22 cm power stroke (the band),\nthen a long freewheel belly-glide\non a keel; low, long body.', { size: 14 });
 
 BOX(318, 775, 265, 295, 'HOW IT PLAYS');
-TXT(332, 826, '① Click the head UP, press on its\n    back and pull back ~22 cm.', { size: 14 });
+TXT(332, 826, '① Click the head UP, press on its\n    back and pull back ~43 cm.', { size: 14 });
 ARROW(500, 870, 420, 870, { stroke: RED, strokeWidth: 2 });
 POLY(ellPts(530, 872, 26, 8), { fill: C.black, fillStyle: 'hachure', hachureGap: 3 });
 TXT(332, 908, '② Let go – the ratchet holds it.', { size: 14 });
-TXT(332, 942, '③ Tap the head – it toboggans\n    ≈ 4 m across the floor.', { size: 14 });
+TXT(332, 942, '③ Tap the beak tip – it toboggans\n    ≈ 7 m (less if you pull less).', { size: 14 });
 TXT(332, 994, '④ Lift the head to re-arm.', { size: 14 });
-TXT(332, 1032, 'vs Concept 2: lying body, band in\ntension (pull-back), head-nod trigger.', { size: 12.6, color: GREY });
+TXT(332, 1032, 'vs Concept 2: lying body; bands in\nTENSION + pawl; head-nod trigger.', { size: 12.6, color: GREY });
 
 BOX(593, 775, 262, 295, 'NUMBERS');
 BULLETS(607, 830, [
   'Mass ≈ 39 g, 78 % printed PLA',
-  'CG 17 mm ahead of rear axle,\n15 mm up (68 % on drive wheels)',
-  'Band stores 31 mJ; sim run 4.1 m\n(dusty-floor worst case 2.6 m)',
-  'Top speed ≈ 1.1 m/s',
-  'No wheelspin above μ 0.64\n(nitrile O-ring ≈ 0.9; test it)',
-  'Bought (15): 2 mm steel rod, 6×\nMR52, 4 O-rings, #10 band, line,\n5 g ballast. Printed: 17 parts',
+  'CG 17 mm ahead of rear axle,\n17 mm up (68 % on drive wheels)',
+  'Bands store 60 mJ; sim run 7.7 m\n(dusty floor 4.9 m)',
+  'Top speed ≈ 1.6 m/s',
+  'No wheelspin above μ 0.63\n(nitrile O-ring ≈ 0.9; test it)',
+  'Bought (17): 2 D-shafts, 6 MR52,\n4 O-rings, 2 #10 bands, line, sheave\npin, 5 g ballast. Printed: 18 parts',
 ], { size: 13.4, gap: 3 });
 
 BOX(865, 775, 255, 295, 'RULES CHECK');

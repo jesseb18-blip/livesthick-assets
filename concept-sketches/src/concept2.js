@@ -21,7 +21,7 @@ SHEET_BORDER();
 
 /* ================= SIDE VIEW (from the toy's right) ================= */
 const m = V(318, 590, 3.7);
-TXT(48, 62, 'SIDE VIEW', { font: 'PH', size: 22 });
+TXT(48, 62, 'BODY – SIDE VIEW', { font: 'PH', size: 22 });
 TXT(48, 84, 'from the right · scale 0.94 : 1 · dashed = hidden · purple = mechanism', { size: 13, color: GREY });
 FLOOR(m.X(-46), m.X(44), m.Y(0));
 // body: black back shell + white belly cap (front crescent)
@@ -59,7 +59,8 @@ wheel(m, 4, 11, 11, 0.5);
 // mechanism: crown hangs from a thrust face under the base top; 10 T pinion on the heel axle (far side)
 RECT(m.X(-8), m.Y(20.5), 24 * m.s, 3.5 * m.s, mo({ fill: MECH_L, fillStyle: 'hachure', hachureGap: 4 }));
 for (let x = -7.5; x <= 15.5; x += 1.9) L(m.X(x), m.Y(17), m.X(x + 0.5), m.Y(15.2), { stroke: MECH, strokeWidth: 1, roughness: 0.3 });
-RECT(m.X(1.5), m.Y(22.5), 5 * m.s, 2 * m.s, { stroke: GREY, strokeWidth: 1, fill: '#999', fillStyle: 'cross-hatch', hachureGap: 2.5 });
+L(m.X(4), m.Y(20.5), m.X(4), m.Y(25), { stroke: C.steel, strokeWidth: 3 });
+POLY([[m.X(3), m.Y(21.6)], [m.X(5), m.Y(21.6)], [m.X(4), m.Y(20.5)]], { fill: C.steel, fillStyle: 'solid', strokeWidth: 0.6 });
 POLY(gearPts(m.X(4), m.Y(11), 4.2 * m.s, 5.6 * m.s, 10, false), mo({ fill: MECH_L, fillStyle: 'solid', strokeWidth: 1.2 }));
 RECT(m.X(-15.5), m.Y(7), 17 * m.s, 3.2 * m.s, dashed({ stroke: '#555', fill: C.steel, fillStyle: 'cross-hatch', hachureGap: 3 }));
 TWIST(m.X(4), m.Y(22), m.X(4), m.Y(79), 9, { strokeLineDash: [6, 3] });
@@ -68,9 +69,9 @@ RECT(m.X(-1), m.Y(87), 10 * m.s, 3 * m.s, { stroke: MECH, fill: MECH_L, fillStyl
 // trigger linkage (left flipper, far side): pivot + crank, sprung L-arm, lock rod down into a crown hole
 CIRC(m.X(4), m.Y(66), 13, { stroke: MECH, fill: MECH_L, fillStyle: 'solid', strokeWidth: 1.4 });
 L(m.X(4), m.Y(66), m.X(4), m.Y(60), { stroke: MECH, strokeWidth: 2.6 });
-L(m.X(4), m.Y(60), m.X(9), m.Y(60), mo({ strokeWidth: 2.2 }));
-L(m.X(9), m.Y(60), m.X(9), m.Y(18), mo({ strokeWidth: 2.4, strokeLineDash: [9, 4] }));
-RECT(m.X(7.2), m.Y(40), 3.6 * m.s, 5 * m.s, { stroke: GREY, strokeWidth: 1, fill: '#ddd', fillStyle: 'hachure', hachureGap: 3 });
+L(m.X(4), m.Y(60), m.X(7.5), m.Y(60), mo({ strokeWidth: 2.2 }));
+L(m.X(7.5), m.Y(60), m.X(7.5), m.Y(18), mo({ strokeWidth: 2.4, strokeLineDash: [9, 4] }));
+RECT(m.X(5.7), m.Y(40), 3.6 * m.s, 5 * m.s, { stroke: GREY, strokeWidth: 1, fill: '#ddd', fillStyle: 'hachure', hachureGap: 3 });
 // centre of mass
 CIRC(m.X(-2.5), m.Y(32), 18, { strokeWidth: 1.6, stroke: RED, fill: '#fdfcf8', fillStyle: 'solid' });
 L(m.X(-2.5) - 12, m.Y(32), m.X(-2.5) + 12, m.Y(32), { stroke: RED, strokeWidth: 1.2 });
@@ -86,9 +87,9 @@ CALL(m.X(-9), m.Y(5.4), 48, 466, '2 M8 STEEL WASHERS\nlow at the back\n→ CG lo
 CALL(m.X(-30), m.Y(0.5), 48, 545, 'TAIL + Ø8 ROLLER\n= 3rd wheel', { start: true, size: 13.5 });
 // right column
 CALL(m.X(4.6), m.Y(66.6), 482, 300, 'TRIGGER PIVOT\n+ crank (left\nflipper, far side)', { start: true, size: 13 });
-CALL(m.X(9), m.Y(33), 482, 385, 'LOCK ROD in a\nguide (see B)', { start: true, size: 13 });
-CALL(m.X(15), m.Y(18.5), 482, 448, 'CROWN 24 T on a\nthrust face', { start: true, size: 13 });
-CALL(m.X(24.5), m.Y(15), 482, 512, 'BASE: oval tray', { start: true, size: 13 });
+CALL(m.X(7.5), m.Y(33), 482, 385, 'LOCK ROD in a\nguide (see B)', { start: true, size: 13 });
+CALL(m.X(15), m.Y(18.5), 482, 448, 'CROWN 24 T hangs\non a pointed pin', { start: true, size: 13 });
+CALL(m.X(24.5), m.Y(15), 482, 512, 'BASE: oval tray,\nwheel slots on top', { start: true, size: 13 });
 // below the floor
 CALL(m.X(4), m.Y(0.4), 48, 690, 'HEEL WHEELS: Ø22, O-ring tyres,\n0.5 mm eccentric hubs (C)', { start: true, size: 13 });
 CALL(m.X(4), m.Y(11), 300, 744, 'PINION 10 T on the heel axle\n(left side, under the crown)', { start: true, size: 13 });
@@ -161,7 +162,7 @@ for (const [cx, sg, lab] of [[665, -1, 'LEFT wheel'], [785, 1, 'RIGHT wheel']]) 
 }
 L(665, 522, 785, 534, { stroke: C.steel, strokeWidth: 2.4, strokeLineDash: [6, 4] });
 TXT(725, 600, 'axle hole 0.5 mm off-centre,\nopposite sides (drawn ×4)', { size: 12.5, anchor: 'middle', color: GREY });
-TXT(610, 640, 'Roll = atan(1 ÷ 32 mm track) ≈ ±1.8°\nper wheel turn; the single tail roller\nlets the body rock. It follows while\nI·θ·ω² < m·g·track/2 (I ≈ 8.5×10⁻⁵\nkg·m²) → below ≈ 0.55 m/s. Faster,\nthe heels take turns to hop 0.5 mm;\nthe slow waddle shows as it starts\nand as it runs down.', { size: 12.6, lh: 15.4 });
+TXT(610, 640, 'Roll = atan(1 ÷ 32 mm track) ≈ ±1.8°\nper wheel turn; the single tail roller\nlets the body rock. It follows while\nI·θ·ω² < m·g·track/2 (I ≈ 8.5×10⁻⁵\nkg·m²): below 0.55 m/s, i.e. at the\nstart and the last ≈ 1 m. Faster, the\nheels hop 0.5 mm in turn (2.6 mJ/m,\ncounted in the run model).', { size: 12.6, lh: 15.4 });
 
 /* ================= D: STANCE ================= */
 BOX(860, 448, 260, 317, 'D   HEELS + TAIL STANCE');
@@ -182,7 +183,7 @@ TXT(cgx - 12, cgy - 8, 'CG', { size: 13, color: RED, anchor: 'end' });
 DIM(cgx, dg, hx0, dg, 'd 6.5', 12);
 L(cgx + 8, cgy, hx0 + 84, cgy, { stroke: GREY, strokeWidth: 0.8, strokeLineDash: [3, 3] });
 DIM(hx0 + 80, dg, hx0 + 80, cgy, 'h 32', 0);
-TXT(872, 645, 'Stands like an emperor: on its heels\n(drive wheels) and stiff tail (roller);\nthe feet hover 2 mm as a front stop.\nLaunch a = 27 mN ÷ 44 g ≈ 0.6 m/s²\njust loads the tail – no wheelie.\nNose-dive needs a = g·d/h ≈ 2.0 m/s²;\ncoasting slows at < 0.5 m/s² ✓\nSide tip needs 20°; waddle ±1.8° ✓', { size: 12.6, lh: 15.4 });
+TXT(872, 645, 'Stands like an emperor: on its heels\n(drive wheels) and stiff tail (roller);\nthe feet hover 2 mm as a front stop.\nLaunch a = 25 mN ÷ 44 g ≈ 0.6 m/s²\njust loads the tail – no wheelie.\nNose-dive needs a = g·d/h ≈ 2.0 m/s²;\ncoasting slows at < 0.5 m/s² ✓\nSide tip needs 20°; waddle ±1.8° ✓', { size: 12.6, lh: 15.4 });
 
 /* ================= A: ENERGY ================= */
 BOX(1130, 40, 540, 395, 'A   ENERGY – TURN THE HEAD');
@@ -203,7 +204,8 @@ TXT(ax + 40, 150, '② neck ratchet:\n12 teeth + flexure\npawl, one way only', {
 TWIST(ax, 178, ax, 296, 8);
 TXT(ax + 18, 232, '③ rubber motor\n4 strands × 60 mm', { size: 12.6 });
 // crown (side), hanging from a thrust face; pinion on the heel axle; heel wheel
-RECT(ax - 30, 292, 60, 6, { stroke: GREY, strokeWidth: 1, fill: '#bbb', fillStyle: 'cross-hatch', hachureGap: 3 });
+RECT(ax - 30, 284, 60, 6, { stroke: GREY, strokeWidth: 1, fill: '#bbb', fillStyle: 'cross-hatch', hachureGap: 3 });
+L(ax - 8, 290, ax - 8, 299, { stroke: C.steel, strokeWidth: 3 });
 RECT(ax - 39, 299, 78, 12, { stroke: MECH, fill: MECH_L, fillStyle: 'hachure', hachureGap: 4, strokeWidth: 1.3 });
 for (let x = ax - 37; x <= ax + 35; x += 7) L(x, 311, x + 2, 316, { stroke: MECH, strokeWidth: 1.1 });
 L(ax + 24, 262, ax + 24, 306, { stroke: MECH, strokeWidth: 3 });
@@ -213,15 +215,15 @@ POLY(gearPts(ax, 333, 13, 17, 10, false), { stroke: MECH, fill: MECH_L, fillStyl
 CIRC(ax, 333, 6, { fill: C.steel, fillStyle: 'solid' });
 L(ax - 60, 369, ax + 45, 369, { strokeWidth: 1.4 });
 ARC_ARROW(ax, 333, 46, -2.6, -1.4, { stroke: C.green, strokeWidth: 1.8, head: 8 });
-TXT(ax + 46, 300, '④ crown 24 T (turns ↻\n    from above); thrust face', { size: 12.4 });
+TXT(ax + 46, 300, '④ crown 24 T (↻)\n    hangs on a steel pin', { size: 12.4 });
 TXT(ax + 44, 338, '⑤ 10 T pinion on the heel\n    axle, under the crown’s\n    left rim → rolls forward', { size: 12.4 });
 BULLETS(1406, 92, [
   'Rubber: 2 loops of #16 band = 4 strands\n× 60 mm (0.34 g), hook to hook',
   '28 turns (≈ 1/3 of the ~90-turn break\npoint) → 400 J/kg × 0.34 g ≈ 135 mJ',
   '400 J/kg is our low assumption; we will\nmeasure torque vs turns (a 3rd loop\nadds 50 % if needed)',
-  'Drag: rolling 6.5 + heel-axle bores 6.2\n+ tail roller 4.5 = 17 mN; gears η 0.75\n→ 2.5 m needs 57 mJ (2.4×)',
+  'Drag (Crr 0.015): rolling 6.5 + heel bores\n6.2 + tail roller 4.5 = 17 mN; η 0.72 incl.\nthe pin → 2.5 m needs ≈ 62 mJ (2.2×)',
   'Crown 24 : pinion 10 → 2.4 wheel turns\nper motor turn; 28 turns = 4.6 m',
-  'Start force 44 mN = 2.6× drag. Time-\nstep model (torque ∝ turns left): run\n≈ 5.1 m, top 1.2 m/s; worst 3.3 m',
+  'Time-step model (torque ∝ turns left,\nwaddle hops): run ≈ 4.6 m, top 1.0 m/s;\nworst case (250 J/kg) 3.1 m. Unwound, the\nhead free-spins on its ratchet as it coasts.',
 ], { size: 12.2, gap: 3 });
 TXT(1400, 424, 'head → ratchet → rubber → crown 24T → pinion 10T on the heel axle → wheels (×2.4)', { size: 12, anchor: 'middle', color: GREY });
 
@@ -268,40 +270,46 @@ function lockView(ox, fired) {
   }
   TXT(ox + 8, 503, fired ? 'FIRED' : 'ARMED', { font: 'PH', size: 19, color: col });
   TXT(fired ? P[0] + 40 : P[0] + 30, fired ? 640 : 510, fired ? 'flipper\nDOWN' : 'flipper UP', { size: 12, color: col });
-  TXT(ox + 8, 694, fired ? 'push DOWN (≈ 0.5 N): the crank lifts\nthe rod 4 mm, 1.4 mm clear → GO' : 'UP: the detent notch holds it; rod 2.5 mm\ninto a straight bore (side load only)', { size: 12, color: fired ? C.green : INK });
+  TXT(ox + 8, 694, fired ? 'light press 0.07 N (tipping needs 5 N·mm);\n2nd notch holds it, rod 4 mm up → GO' : 'UP: detent 3 N·mm (15× flipper weight);\nrod 2.5 mm into a 3 mm straight bore', { size: 12, color: fired ? C.green : INK });
 }
 lockView(1140, false);
 lockView(1405, true);
 L(1400, 490, 1400, 712, { stroke: GREY, strokeWidth: 0.8, strokeLineDash: [4, 4] });
 
-/* ================= E: EGG (true scale) ================= */
+/* ================= E: EGG (scale 1:4) ================= */
 BOX(1130, 728, 540, 165, 'E   PACKS INTO THE EGG');
 {
   const sx = 1178, sy = 821, ev = 1268;
   POLY(ellPts(sx, sy, 37.5, 50), { stroke: C.orange, strokeWidth: 2 });
   POLY(ellPts(sx, sy, 36, 48.5), { stroke: C.orange, strokeWidth: 0.7, roughness: 0.3 });
-  // closed body (back shell + belly cap) from z -18 to +48, centre z +5; base tray in the bottom (z -38..-18)
-  const bp = []; for (let i = 0; i <= 30; i++) { const t = TC + (Math.PI - 2 * TC) * i / 30; bp.push([sx + 25 * Math.cos(t), sy - (5 + 43 * Math.sin(t))]); }
-  POLY(bp, { stroke: INK, strokeWidth: 1.3, fill: '#2c2c31', fillStyle: 'hachure', hachureGap: 5, fillWeight: 0.6 });
-  POLY([[sx - 19.5, sy + 18], [sx + 19.5, sy + 18], [sx + 21.4, sy + 21], [sx + 21.4, sy + 35], [sx + 19.5, sy + 38], [sx - 19.5, sy + 38], [sx - 21.4, sy + 35], [sx - 21.4, sy + 21]], { stroke: INK, strokeWidth: 1.3, fill: '#fff', fillStyle: 'solid' });
-  L(sx - 12, sy + 24, sx + 12, sy + 24, { stroke: MECH, strokeWidth: 2 });
-  CIRC(sx, sy - 25, 29, { fill: '#fdfcf8', fillStyle: 'solid', stroke: INK, strokeWidth: 1.2 });
-  TXT(sx, sy - 22, 'head', { size: 10, anchor: 'middle' });
-  for (const z of [2, 7]) RECT(sx - 11, sy - z - 2, 22, 4, { stroke: C.orange, strokeWidth: 1.1, fill: '#fdfcf8', fillStyle: 'solid' });
-  for (const x of [-17, 15]) RECT(sx + x, sy - 28, 2.5, 40, { fill: '#111', fillStyle: 'solid', strokeWidth: 0.5 });
+  // closed body hull: body y 23..84 (open neck at the top) placed at egg z = y - 40; tray at z -37..-17
+  const hp = [], hn = [];
+  for (let i = 0; i <= 24; i++) { const y = 23 + 61 * i / 24, hw = 25 * Math.sqrt(1 - ((y - 46) / 43) ** 2); hp.push([sx + hw, sy - (y - 40)]); hn.push([sx - hw, sy - (y - 40)]); }
+  POLY(hp.concat(hn.reverse()), { stroke: INK, strokeWidth: 1.3, fill: '#2c2c31', fillStyle: 'hachure', hachureGap: 5, fillWeight: 0.6 });
+  POLY([[sx - 19.5, sy + 17], [sx + 19.5, sy + 17], [sx + 21.4, sy + 20], [sx + 21.4, sy + 34], [sx + 19.5, sy + 37], [sx - 19.5, sy + 37], [sx - 21.4, sy + 34], [sx - 21.4, sy + 20]], { stroke: INK, strokeWidth: 1.3, fill: '#fff', fillStyle: 'solid' });
+  L(sx - 12, sy + 27, sx + 12, sy + 27, { stroke: MECH, strokeWidth: 2 });
+  RECT(sx - 8.5, sy + 31, 17, 2.5, { fill: C.steel, fillStyle: 'solid', strokeWidth: 0.5 });
+  CIRC(sx - 2, sy - 25, 29, { fill: '#fdfcf8', fillStyle: 'solid', stroke: INK, strokeWidth: 1.2 });
+  TXT(sx - 2, sy - 22, 'head', { size: 9.5, anchor: 'middle' });
+  POLY([[sx + 13, sy - 30], [sx + 17, sy - 30], [sx + 15, sy - 38]], { fill: C.orange, fillStyle: 'solid', strokeWidth: 0.6 });
+  for (const z of [4, 9]) RECT(sx - 11, sy - z - 2, 22, 4, { stroke: C.orange, strokeWidth: 1.1, fill: '#fdfcf8', fillStyle: 'solid' });
+  for (const x of [-18.5, 16]) RECT(sx + x, sy - 30, 2.5, 42, { fill: '#111', fillStyle: 'solid', strokeWidth: 0.5 });
+  L(sx + 8, sy + 14, sx + 8, sy - 22, { stroke: MECH, strokeWidth: 1.4 });
+  RECT(sx - 13, sy + 6, 9, 5, { fill: C.orange, fillStyle: 'solid', strokeWidth: 0.5 });
+  PL([[sx - 3, sy + 12], [sx - 9, sy + 2]], { strokeWidth: 2 }); CIRC(sx - 3, sy + 13, 4, { strokeWidth: 0.8 });
   TXT(sx, 886, 'side', { size: 10.5, anchor: 'middle', color: GREY });
-  // end view at the tray's lower edge: egg radius 22.4 vs tray 21.4 × 21
-  CIRC(ev, sy, 44.8, { stroke: C.orange, strokeWidth: 2 });
+  // end view at the tray's lower edge (egg z = -37): inner radius 23.3 vs tray 21.4 × 21
+  CIRC(ev, sy, 46.6, { stroke: C.orange, strokeWidth: 2 });
   POLY(ellPts(ev, sy, 21.4, 21), { stroke: INK, strokeWidth: 1.3, fill: '#fff', fillStyle: 'solid' });
   CIRC(ev, sy, 24, { stroke: MECH, strokeWidth: 1.2 });
-  TXT(ev, sy + 40, 'tray end', { size: 10.5, anchor: 'middle', color: GREY });
+  TXT(ev, sy + 38, 'tray end', { size: 10.5, anchor: 'middle', color: GREY });
 }
-TXT(1318, 784, 'True scale. The 2 body parts close into a hull 66 tall', { size: 12 });
-TXT(1318, 799, '× 46 × 50 holding the head, wheels, flippers, tail +', { size: 12 });
-TXT(1318, 814, 'roller, feet, rod, beak and bands; the oval tray (crown', { size: 12 });
-TXT(1318, 829, 'and washers inside) sits in the bottom of the egg.', { size: 12 });
-TXT(1318, 844, 'Tightest: tray 21.4 of 22.4 mm radius (right), body', { size: 12 });
-TXT(1318, 859, 'top 0.5 mm below the egg wall → confirm in CAD.', { size: 12 });
+TXT(1318, 784, 'Scale 1 : 4. The 2 body parts close into a hull', { size: 12 });
+TXT(1318, 799, '(61 tall with the open neck, 46 × 50) holding the', { size: 12 });
+TXT(1318, 814, 'head, beak, wheels, flippers, tail + roller, feet,', { size: 12 });
+TXT(1318, 829, 'rod, pinion, axles and bands; the oval tray (crown,', { size: 12 });
+TXT(1318, 844, 'washers, pin inside) sits in the bottom of the egg.', { size: 12 });
+TXT(1318, 859, 'Tightest: tray 21.4 of 23.3 mm; body top 4.5 mm clear.', { size: 12 });
 TXT(1318, 882, 'Assembled 109 mm tall → bigger than the egg ✓', { size: 13, color: C.green });
 
 /* ================= bottom boxes ================= */
@@ -327,18 +335,18 @@ BOX(318, 775, 265, 295, 'HOW IT PLAYS');
 TXT(332, 828, '① Raise the LEFT flipper – click: the\n     lock rod springs onto the crown.', { size: 13.2, lh: 18 });
 TXT(332, 878, '② Turn the head 28× clockwise\n     (click-click…), stop beak-forward.', { size: 13.2, lh: 18 });
 TXT(332, 928, '③ Set it down – it stands on its\n     heels and tail, fully wound.', { size: 13.2, lh: 18 });
-TXT(332, 978, '④ Push the flipper down → it\n     waddles off, ≈ 5 m.', { size: 13.2, lh: 18 });
+TXT(332, 978, '④ Press the flipper down lightly →\n     it waddles off, ≈ 4.6 m.', { size: 13.2, lh: 18 });
 TXT(332, 1030, 'vs Concept 1: upright body, twisted\nrubber motor (turn key), flipper trigger.', { size: 12.6, color: GREY });
 
 BOX(593, 775, 262, 295, 'NUMBERS');
 BULLETS(607, 830, [
   'Mass ≈ 44 g, ≈ 86 % printed PLA',
   'CG 32 mm high, 6.5 mm behind the\nheel axle (81 % on the heels)',
-  'Motor ≈ 135 mJ; 2.5 m needs 57 mJ',
+  'Motor ≈ 135 mJ; 2.5 m needs ≈ 62 mJ',
   'Gears m1, printed: crown 24 T →\npinion 10 T (×2.4)',
-  'Run ≈ 5.1 m (worst case 3.3 m),\ntop speed ≈ 1.2 m/s',
-  'Lock-rod side load ≤ 0.17 N\n(1.54 mN·m ÷ 9 mm)',
-  'Bought (9): 2 steel axles, 2 O-rings,\n2 #16 bands, 2 M8 washers',
+  'Run ≈ 4.6 m (worst case 3.1 m),\ntop speed ≈ 1.0 m/s',
+  'Lock-rod side load ≤ 0.17 N\n(1.54 N·mm ÷ 9.2 mm)',
+  'Bought (9): 2 axles + 1 pivot pin\n(steel), 2 O-rings, 2 bands, 2 washers',
 ], { size: 13.2, gap: 3 });
 
 BOX(865, 775, 255, 295, 'RULES CHECK');

@@ -1,11 +1,15 @@
 # Penguin Kinder-egg toy: 2D concept sketches
 
-There are two 11×17 in landscape concept sheets. Each sheet covers the **body**, the **energy charge** and the **trigger** for a penguin running toy that must travel at least 2.5 m. They are drawn in a hand-sketch style with rough.js and annotated with text and arrows.
+There are two 11×17 in landscape concept sheets. Each sheet covers the **body**, the **energy charge** and the **trigger** for a penguin Kinder-egg toy:
+- Concept 1 is a running toy that must travel at least 2.5 m.
+- Concept 2 is a walker that must keep walking for at least 5 s.
+
+The sheets are drawn in a hand-sketch style with rough.js and annotated with text and arrows.
 
 | File | Concept |
 | --- | --- |
 | `Concept1_TuxToboggan.png` / `.pdf` | **Tux Toboggan**: a lying, belly-sliding penguin. Pull back to charge. Tapping the beak nods the head, which pulls a cord that lifts the pawl. |
-| `Concept2_EmperorWaddler.png` / `.pdf` | **Emperor Waddler**: an upright penguin that stands on its heels and tail. Turn the head to wind a twisted-rubber motor. A flipper crank lifts a lock rod out of the crown gear. |
+| `Concept2_EmperorWaddler.png` / `.pdf` | **Emperor Waddler**: an upright penguin that walks on two flat feet, with its stiff tail on a roller as a prop. Turn the head to wind a twisted-rubber motor. A flipper crank lifts a lock rod out of the crown gear. Cranks shuffle the feet (they never lift), and a grease damper paces the walk. |
 
 The name, signature and date lines in each title block are left blank to be filled in by hand.
 
@@ -41,14 +45,20 @@ The export makes three changes so the SVGs work outside a browser:
   - 4.9 m on a dusty floor (rolling-resistance coefficient Crr 0.025);
   - 3.6 m on a dusty floor with only a 35 cm pull;
   - no wheelspin above μ 0.63.
-- **Concept 2:** a separate time-step model that assumes:
-  - motor torque falls in proportion to the turns left;
-  - 400 J/kg energy density for office rubber;
-  - gear efficiency 0.72;
-  - Crr 0.015;
-  - a waddle hop loss above 0.55 m/s.
+- **Concept 2 (walker):** a cadence model in `tools/walker-model.mjs` (`node tools/walker-model.mjs` prints the base case and the worst cases).
+  - Motor: torque falls in proportion to the turns left, with 400 J/kg for office rubber (6 strands × 60 mm of #16 band, 28 turns, about 200 mJ).
+  - Drive: gear efficiency 0.7, crown 24 T to pinion 12 T, so 2 crank turns per motor turn.
+  - Walking load: about 0.22 N·mm average and 0.35 N·mm peak at the crank. This covers the forward-skidding foot, the tray rubbing on the feet and lifting the body for the waddle.
+  - Damper: viscous, c = 0.054 N·mm·s, from 30 Pa·s silicone grease with a 1.1 mm gap on each face of a Ø10 rotor.
+  - Pace: cadence = (crank torque − load) ÷ 2πc.
 
-  It gives a 4.6 m run, and 3.1 m in the worst case (250 J/kg). The 400 J/kg figure is an assumption, and a torque-versus-turns test should confirm it.
+  Results:
+  - 1.7 strides/s at the start and 1.4 at 5 s, so about 8 strides (7 cm) in the first 5 s;
+  - at least 1 stride/s for 13 s and at least 0.5 stride/s for 29 s, about 40 strides (0.36 m) in all;
+  - with 250 J/kg, double the load, or double or half the damping, it still walks at least 0.5 stride/s for 18 s or more;
+  - with weak rubber and a rough floor together it needs 40 turns to start.
+
+  The 400 J/kg figure and the grease viscosity are assumptions, and a torque-versus-turns test and a damper spin-down test should confirm them.
 
 ## Review history
 
@@ -61,12 +71,13 @@ Each round, a separate "brutal engineering professor" critic agent marked both s
 | 3 | 7.5 | 7.0 | **Sheet 1:** run numbers now from the sim, payout and charge stops, egg clearance. **Sheet 2:** trigger press could tip it, thrust friction, waddle hop loss. |
 | 4 | 8.1 | 7.7 | **Sheet 1:** pull-only trigger cord (a rigid rod made the head chatter), tap the beak tip with a moment check, 2:1 sheave with 2 bands for margin, axle section with keel skirts. **Sheet 2:** hook-shaft with MR52 thrust bearing, steady the head when firing, D-shaft keying, egg layout at true 1:4. |
 
-The round-4 fixes are in the files but were not re-scored.
+The round-4 fixes are in the files but were not re-scored. After the review, Concept 2 was redesigned from heel wheels to walking feet (the request was "on feet, not wheels, working for at least 5 s"); the trigger and the head-wind motor carried over. The walker version has not been through the critic.
 
 Known weak points to check on a prototype:
 - **Concept 1:**
   - its egg packing has 1.7 mm of clearance, so confirm it in CAD;
   - top speed is about 1.6 m/s at full pull.
 - **Concept 2:**
-  - the waddle shows only below about 0.55 m/s, at the start and over the last metre;
+  - the claw fins' grip-versus-slide ratio (assumed μ 0.8 back, 0.15 forward) needs testing on the actual floor; TPU fins are the fallback if thin PLA fins are too stiff;
+  - the damper grease viscosity sets the pace: change the gap or the grease grade if it walks too fast or too slow;
   - the rubber energy figure needs measuring.

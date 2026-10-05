@@ -284,8 +284,8 @@ L(t.X(78), Z(8), t.X(78), Z(-8), dashed({ stroke: INK }));
 DIM(t.X(150), Z(17.5), t.X(150), Z(-17.5), '35 body', -18);
 DIM(t.X(64), Z(24.6), t.X(64), Z(-24.6), '≈49 over flippers', 0, { halo: 5 });
 { // section through the rear axle (0.6 : 1)
-  const cx = 935, fy = 766, k = 2.4, Y = (y) => fy - y * k, Zs = (z) => cx + z * k;
-  TXT(905, 690, 'rear-axle section', { size: 12, color: GREY });
+  const cx = 935, fy = 770, k = 2.4, Y = (y) => fy - y * k, Zs = (z) => cx + z * k;
+  TXT(905, 683, 'rear-axle section', { size: 12, color: GREY });
   POLY(ellPts(cx, Y(17.5), 17.5 * k, 15.5 * k, 0, Math.PI, 2 * Math.PI, 24), { fill: C.black, fillStyle: 'hachure', hachureGap: 3, strokeWidth: 1.4 });
   POLY(ellPts(cx, Y(17.5), 17.5 * k, 15.5 * k, 0, 0, Math.PI, 24), { fill: '#fff', fillStyle: 'solid', strokeWidth: 1.4 });
   for (const sg of [1, -1]) {

@@ -1,0 +1,36 @@
+EDITING THE CONCEPT SKETCHES ON AN IPAD
+=======================================
+
+What is in this kit
+  Concept1_TuxToboggan.svg, Concept2_EmperorWaddler.svg
+      Fully editable vector versions of the two 11x17 sheets. Every line, arrow, hatch
+      and label is its own object, and every label is live, retypeable text.
+  fonts/  ArchitectsDaughter, PatrickHand, Caveat (the handwriting fonts) and DejaVuSans
+      (used only for symbols such as 1-in-a-circle, arrows, approx-equal, ticks, Greek letters).
+      Free licences: see fonts/FONTS-LICENSE.txt.
+
+1. Unzip
+   Save the zip to the Files app and tap it once; it unpacks into a folder.
+
+2. Install the four fonts (do this first)
+   Use your drawing app's own "import font" option if it has one, or a font-installer app
+   from the App Store. If you skip this step, the text is still editable, but it shows
+   in a substitute font instead of the handwriting style.
+
+3. Open an SVG in a vector drawing app, for example:
+     - Affinity Designer 2 (one-off purchase)
+     - Adobe Illustrator for iPad (subscription)
+     - Linearity Curve (has a free tier)
+   Open or import the .svg file. Then:
+     - tap any label to retype it; numbers, notes and titles are all normal text;
+     - drag, delete, resize or recolour any line, arrow or shape;
+     - the hand-drawn hatching is made of many small strokes, so use the Layers panel
+       or a selection lasso to grab a whole filled area at once.
+   Avoid Procreate, Goodnotes, Notability and Apple Markup for this. They treat the sheet as a
+   picture, so you can draw on top but not change what is already there.
+
+4. Print or submit
+   Export from the app as PDF (page size 17 x 11 in, landscape) or PNG.
+
+Note: the course expects concept sketches to be hand-drawn and signed by each member.
+Fill in the Drawn by / Signature / Date lines yourself.

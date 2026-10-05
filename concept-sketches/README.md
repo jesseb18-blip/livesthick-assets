@@ -17,6 +17,23 @@ node tools/render.mjs 1   # or 2; writes src/<name>.html, <name>.png (3400×2200
 
 `src/sketchlib.js` holds the drawing helpers (leaders, dimensions, boxes, gears and ratchets, bands, the title block). `src/concept1.js` and `src/concept2.js` draw the two sheets. Rendering uses the preinstalled Playwright Chromium.
 
+## Editable version (iPad and other vector apps)
+
+`iPad_edit_kit.zip` contains the two sheets as editable SVGs, the four fonts they use and `HOW-TO-EDIT-ON-IPAD.txt`; the same files are also in `editable/`. Open the SVGs in a vector app such as Affinity Designer, Illustrator or Linearity Curve. Every stroke and label is a separate object, and the text is live.
+
+To rebuild them, install `fonttools` and `brotli` with pip, then run:
+
+```
+python3 tools/make-fonts.py   # TTFs + licences in editable/fonts, src/font-coverage.json
+node tools/render.mjs         # also writes src/<name>.html, which the export reads
+node tools/export-svg.mjs     # editable/<name>.svg
+```
+
+The export makes three changes so the SVGs work outside a browser:
+- each label is anchored at its measured left edge;
+- white text halos become a separate layer underneath the text;
+- symbols the handwriting fonts lack (① → ≈ ≥ ✓ λ …) are set in DejaVu Sans, because many vector apps don't substitute fonts character by character.
+
 ## Where the numbers come from
 
 - **Concept 1:** taken from the time-step simulation in `../penguin-sim/index.html` (`simulate()`), with front-roller MR52 bearings, two #10 bands on a 2:1 sheave and a 43 cm pull. Results:

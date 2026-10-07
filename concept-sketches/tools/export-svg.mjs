@@ -3,17 +3,17 @@
 // many apps ignore paint-order; symbols missing from the handwriting fonts are set in DejaVu Sans; every label is
 // start-anchored at its measured position.
 // Run tools/make-fonts.py first: it writes installable TTFs to editable/fonts and src/font-coverage.json.
-// Usage: node tools/export-svg.mjs [1|2 ...]   (default: both)
+// Usage: node tools/export-svg.mjs [1|2|3 ...]   (default: all)
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (f) => readFileSync(join(dir, 'src', f));
-const SHEETS = { 1: 'Concept1_TuxToboggan', 2: 'Concept2_EmperorWaddler' };
+const SHEETS = { 1: 'Concept1_TuxToboggan', 2: 'Concept2_EmperorWaddler', 3: 'Concept3_ClownfishHover' };
 const FONTS = [['AD', 'Architects Daughter', 'ArchitectsDaughter_400.woff2'], ['PH', 'Patrick Hand', 'PatrickHand_400.woff2'], ['CV', 'Caveat', 'Caveat_400.woff2']];
 const COVER = Object.fromEntries(Object.entries(JSON.parse(readFileSync(join(dir, 'src', 'font-coverage.json')))).map(([k, v]) => [k, v]));
-const which = process.argv.slice(2).length ? process.argv.slice(2) : ['1', '2'];
+const which = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(SHEETS);
 mkdirSync(join(dir, 'editable'), { recursive: true });
 const browser = await chromium.launch();
 for (const n of which) {

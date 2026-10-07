@@ -1,5 +1,5 @@
 // Renders the concept sketch sheets to PNG (3400 x 2200) and vector PDF (11 x 17 in landscape).
-// Usage: node tools/render.mjs [1|2 ...]   (default: both)
+// Usage: node tools/render.mjs [1|2|3 ...]   (default: all)
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (f) => readFileSync(join(dir, 'src', f));
 const font = (f) => src(f).toString('base64');
-const SHEETS = { 1: ['concept1.js', 'Concept1_TuxToboggan'], 2: ['concept2.js', 'Concept2_EmperorWaddler'] };
-const which = process.argv.slice(2).length ? process.argv.slice(2) : ['1', '2'];
+const SHEETS = { 1: ['concept1.js', 'Concept1_TuxToboggan'], 2: ['concept2.js', 'Concept2_EmperorWaddler'], 3: ['concept3.js', 'Concept3_ClownfishHover'] };
+const which = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(SHEETS);
 const browser = await chromium.launch();
 for (const n of which) {
   const [script, name] = SHEETS[n];

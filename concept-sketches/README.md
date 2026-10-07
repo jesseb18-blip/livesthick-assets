@@ -1,9 +1,9 @@
 # Penguin Kinder-egg toy: 2D concept sketches
 
-There are three 11×17 in landscape concept sheets. Each sheet covers the **body**, the **energy charge** and the **trigger** for a penguin Kinder-egg toy:
+There are four 11×17 in landscape concept sheets. Each sheet covers the **body**, the **energy charge** and the **trigger** for a penguin Kinder-egg toy:
 - Concept 1 is a running toy that must travel at least 2.5 m.
 - Concept 2 is a walker that must keep walking for at least 5 s.
-- Concept 3 is a simple mechanism sketch of a spring toy that swims in place for at least 5 s.
+- Concepts 3 and 4 are simple mechanism sketches of a spring toy that swims in place for at least 5 s.
 
 The sheets are drawn in a hand-sketch style with rough.js and annotated with text and arrows.
 
@@ -12,20 +12,21 @@ The sheets are drawn in a hand-sketch style with rough.js and annotated with tex
 | `Concept1_TuxToboggan.png` / `.pdf` | **Tux Toboggan**: a lying, belly-sliding penguin. Pull back to charge. Tapping the beak nods the head, which pulls a cord that lifts the pawl. |
 | `Concept2_EmperorWaddler.png` / `.pdf` | **Emperor Waddler**: an upright penguin that walks on two flat feet, with its stiff tail on a roller as a prop. Turn the head to wind a twisted-rubber motor. A flipper crank lifts a lock rod out of the crown gear. Cranks shuffle the feet (they never lift), and a grease damper paces the walk. |
 | `Concept3_ClownfishHover.png` / `.pdf` | **Clownfish Hover**: a clownfish on an anemone stand. A printed spiral spring, wound with a nose key, turns a barrel with 21 crown teeth. The tail section hangs on a verge escapement (the clock part), so each tooth lets through one tail wag. A pectoral-fin lever is the trigger. |
+| `Concept4_ClownfishWindUp.png` / `.pdf` | **Clownfish Wind-Up**: the same clownfish with the classic wind-up motor (as in a wind-up car). A dorsal-fin key winds a spiral spring whose outer end sits on a stop. A click drives a 36 T main gear, and two small-gear stages (×13.5) turn a crank in a slot in the tail section's lever. A grease damper paces it. The trigger is a captive stop pin that pulls out of the main gear's teeth. |
 
 The name, signature and date lines in each title block are left blank to be filled in by hand.
 
 ## Rebuilding
 
 ```
-node tools/render.mjs 1   # or 2 or 3; writes src/<name>.html, <name>.png (3400×2200) and <name>.pdf (17×11 in)
+node tools/render.mjs 1   # or 2, 3, 4; writes src/<name>.html, <name>.png (3400×2200) and <name>.pdf (17×11 in)
 ```
 
-`src/sketchlib.js` holds the drawing helpers (leaders, dimensions, boxes, gears and ratchets, bands, the title block). `src/concept1.js`, `src/concept2.js` and `src/concept3.js` draw the three sheets. Rendering uses the preinstalled Playwright Chromium.
+`src/sketchlib.js` holds the drawing helpers (leaders, dimensions, boxes, gears and ratchets, bands, the title block). `src/concept1.js` to `src/concept4.js` draw the four sheets. Rendering uses the preinstalled Playwright Chromium.
 
 ## Editable version (iPad and other vector apps)
 
-`iPad_edit_kit.zip` contains the three sheets as editable SVGs, the four fonts they use and `HOW-TO-EDIT-ON-IPAD.txt`; the same files are also in `editable/`. Open the SVGs in a vector app such as Affinity Designer, Illustrator or Linearity Curve. Every stroke and label is a separate object, and the text is live.
+`iPad_edit_kit.zip` contains the four sheets as editable SVGs, the four fonts they use and `HOW-TO-EDIT-ON-IPAD.txt`; the same files are also in `editable/`. Open the SVGs in a vector app such as Affinity Designer, Illustrator or Linearity Curve. Every stroke and label is a separate object, and the text is live.
 
 To rebuild them, install `fonttools` and `brotli` with pip, then run:
 
@@ -66,6 +67,17 @@ The export makes three changes so the SVGs work outside a browser:
   - Spring: a PETG strip 0.45 × 5 mm, about 10 coils (about 360 mm long) in a Ø22 barrel. Wound 3 turns it gives about 4 N·mm and 40 mJ, at about 25 MPa peak stress.
   - Escapement: 21 crown teeth give 21 wags per barrel turn, so about 63 wags, and each wag releases about 0.6 mJ.
   - Wag rate: about 4 per second, from a bang-bang verge model (period ≈ 4·√(2Iθ/τ) with the tail section's inertia I ≈ 3×10⁻⁶ kg·m², a ±20° swing and about 0.6 N·mm at the staff). That gives about 15 s of swimming, and 7.5 s even if it wags twice as fast. The tail's weight sets the rate, so a prototype should be tuned by making the tail heavier or lighter.
+
+- **Concept 4 (clownfish wind-up):** a cadence model like Concept 2's.
+  - Spring: the same PETG strip, about 400 mm long, wound 4 turns, so about 5 N·mm and 60 mJ.
+  - Gears: ×13.5 with an efficiency of 0.64.
+  - Friction: 0.04 N·mm at the crank.
+  - Damper: c = 0.012 N·mm·s (Ø8 rotor, 2 mm gaps of 30 Pa·s grease).
+
+  Results:
+  - 2.6 wags/s at the start and 2.0 at 5 s, at least 1 wag/s for 16 s, and about 45 wags in all;
+  - with the damper doubled or halved, double friction, or a 30 % weaker spring, still at least 1 wag/s for 9 s or more;
+  - with no damper, the motor empties in under half a second.
 
 ## Review history
 

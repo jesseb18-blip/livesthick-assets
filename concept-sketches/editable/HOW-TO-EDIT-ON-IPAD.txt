@@ -2,8 +2,9 @@ EDITING THE CONCEPT SKETCHES ON AN IPAD
 =======================================
 
 What is in this kit
-  Concept1_TuxToboggan.svg, Concept2_EmperorWaddler.svg, Concept3_ClownfishHover.svg
-      Fully editable vector versions of the three 11x17 sheets. Every line, arrow, hatch
+  Concept1_TuxToboggan.svg, Concept2_EmperorWaddler.svg, Concept3_ClownfishHover.svg,
+  Concept4_ClownfishWindUp.svg
+      Fully editable vector versions of the four 11x17 sheets. Every line, arrow, hatch
       and label is its own object, and every label is live, retypeable text.
   fonts/  ArchitectsDaughter, PatrickHand, Caveat (the handwriting fonts) and DejaVuSans
       (used only for symbols such as 1-in-a-circle, arrows, approx-equal, ticks, Greek letters).
